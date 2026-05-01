@@ -1,0 +1,25 @@
+Inheritance_Category	H1_count	H1_percentage	Sex	Tissue	Hybrid	Inheritance_Category	H2_count	H2_percentage	Sex	Tissue	Hybrid
+Additive	698	6.233812628	F	G	H1	Additive	399	3.746127124	F	G	H2
+C. latens dominant	1247	11.13691167	F	G	H1	C. latens dominant	1474	13.83907614	F	G	H2
+C. remanei dominant	1286	11.48521926	F	G	H1	C. remanei dominant	1288	12.09276124	F	G	H2
+no change	2728	24.36366884	F	G	H1	no change	3619	33.97803023	F	G	H2
+Overdominant	3203	28.60587657	F	G	H1	Overdominant	3060	28.72969674	F	G	H2
+Underdominant	2035	18.17451103	F	G	H1	Underdominant	811	7.614308516	F	G	H2
+Additive	676	6.513779148	F	S	H1	Additive	572	5.345294832	F	S	H2
+C. latens dominant	1147	11.05222586	F	S	H1	C. latens dominant	1304	12.18577703	F	S	H2
+C. remanei dominant	1582	15.24378493	F	S	H1	C. remanei dominant	1444	13.49406598	F	S	H2
+no change	3044	29.3312777	F	S	H1	no change	3189	29.80095318	F	S	H2
+Overdominant	2523	24.31104259	F	S	H1	Overdominant	2426	22.67077843	F	S	H2
+Underdominant	1406	13.54788977	F	S	H1	Underdominant	1766	16.50313055	F	S	H2
+Additive	686	6.213768116	M	S	H1	Additive	611	5.622009569	M	S	H2
+C. latens dominant	995	9.012681159	M	S	H1	C. latens dominant	1098	10.10305484	M	S	H2
+C. remanei dominant	845	7.653985507	M	S	H1	C. remanei dominant	776	7.140228193	M	S	H2
+no change	4477	40.55253623	M	S	H1	no change	4777	43.95472948	M	S	H2
+Overdominant	2558	23.17028986	M	S	H1	Overdominant	2649	24.3743099	M	S	H2
+Underdominant	1479	13.39673913	M	S	H1	Underdominant	957	8.805668016	M	S	H2
+Additive	924	7.822553336	M	W	H1	Additive	762	6.52453121	M	W	H2
+C. latens dominant	1794	15.18794446	M	W	H1	C. latens dominant	1768	15.13828239	M	W	H2
+C. remanei dominant	1521	12.87673552	M	W	H1	C. remanei dominant	1264	10.82284442	M	W	H2
+no change	1989	16.83880799	M	W	H1	no change	1743	14.92422296	M	W	H2
+Overdominant	3047	25.79580088	M	W	H1	Overdominant	3453	29.56588749	M	W	H2
+Underdominant	2537	21.47815781	M	W	H1	Underdominant	2689	23.02423153	M	W	H2

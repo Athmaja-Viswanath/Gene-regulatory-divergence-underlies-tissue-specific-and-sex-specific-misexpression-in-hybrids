@@ -1,0 +1,7 @@
+Inheritance Category	Gonad_Count	Gonad_Percentage	Sex	Tissue	Hybrid	Inheritance Category	Soma_Count	Soma_Percentage	Sex	Tissue	Hybrid
+Additive	775	7.778781492	M	G	H2	Additive	611	5.622009569	M	S	H2
+C. latens dominant	1288	12.92783298	M	G	H2	C. latens dominant	1098	10.10305484	M	S	H2
+C. remanei dominant	508	5.098865803	M	G	H2	C. remanei dominant	776	7.140228193	M	S	H2
+no change	3146	31.57683429	M	G	H2	no change	4777	43.95472948	M	S	H2
+Overdominant	2866	28.76643581	M	G	H2	Overdominant	2649	24.3743099	M	S	H2
+Underdominant	1380	13.85124962	M	G	H2	Underdominant	957	8.805668016	M	S	H2

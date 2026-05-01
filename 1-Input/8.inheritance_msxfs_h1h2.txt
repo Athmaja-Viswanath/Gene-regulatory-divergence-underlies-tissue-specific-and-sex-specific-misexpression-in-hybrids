@@ -1,0 +1,13 @@
+Inheritance Category	Female_Count	Female_Percentage	Sex	Tissue	Hybrid	Inheritance Category	Male_Count	Male_Percentage	Sex	Tissue	Hybrid
+Additive	676	6.513779148	F	S	H1	Additive	686	6.213768116	M	S	H1
+C. latens dominant	1147	11.05222586	F	S	H1	C. latens dominant	995	9.012681159	M	S	H1
+C. remanei dominant	1582	15.24378493	F	S	H1	C. remanei dominant	845	7.653985507	M	S	H1
+no change	3044	29.3312777	F	S	H1	no change	4477	40.55253623	M	S	H1
+Overdominant	2523	24.31104259	F	S	H1	Overdominant	2558	23.17028986	M	S	H1
+Underdominant	1406	13.54788977	F	S	H1	Underdominant	1479	13.39673913	M	S	H1
+Additive	572	5.345294832	F	S	H2	Additive	611	5.622009569	M	S	H2
+C. latens dominant	1304	12.18577703	F	S	H2	C. latens dominant	1098	10.10305484	M	S	H2
+C. remanei dominant	1444	13.49406598	F	S	H2	C. remanei dominant	776	7.140228193	M	S	H2
+no change	3189	29.80095318	F	S	H2	no change	4777	43.95472948	M	S	H2
+Overdominant	2426	22.67077843	F	S	H2	Overdominant	2649	24.3743099	M	S	H2
+Underdominant	1766	16.50313055	F	S	H2	Underdominant	957	8.805668016	M	S	H2
