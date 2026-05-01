@@ -1,0 +1,20 @@
+---
+title: "ReadMe"
+author: "Athmaja Viswanath"
+date: "2026-04-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The following are the list fo scripts and summaries of what each script does
+
+1.WT_general DGEresults.R : This script uses DESeq2 to analyze differential expression of one-to-one orthologous genes between C. remanei and C. latens, incorporating species, tissue, sex, and batch effects in a multifactor design. It identifies species-, tissue-, and sex-biased genes based on adjusted p-values and log2 fold changes, and visualizes their distribution across chromosomes.
+
+2.Classifying inheritance.R: This script uses DESeq2 to analyze differential gene expression across parental species (C. remanei, C. latens) and hybrids (H1, H2) using orthologous genes, across multiple tissue and sex combinations. Inputs include ortholog gene lists, parental count matrices, allele-specific hybrid counts, and chromosome annotations. Outputs include differential expression results for all comparisons, gene classifications into inheritance categories, and regulatory divergence assignments (cis/trans/compensatory) for X-linked genes in hybrids.
+
+2A.Inheritance Plots.R: This script uses DESeq2 results and precomputed inheritance classifications, along with external files for sex-biased genes and cross-condition comparisons, as inputs. It processes and filters these data to assign inheritance categories across tissues, sexes, and hybrids (H1, H2). The outputs are a series of visualizations—including scatterplots, barplots, heatmaps, and bubble plots—that summarize expression inheritance patterns and their relationships across conditions.
+
+3.Allele Specific Expression.R: This script performs allele-specific expression (ASE) and regulatory divergence analysis in hybrid lines (H1, H2) and parental species (C. remanei, C. latens) across multiple tissue–sex combinations. It uses DESeq2 to estimate allele-specific effects, integrates parental and hybrid expression to infer cis and trans regulatory contributions, and classifies genes into regulatory categories such as cis-only, trans-only, compensatory, and conserved, including special handling of X-linked genes. The final outputs are combined into a unified dataset summarizing regulatory divergence proportions across all hybrids, tissues, and sexes for downstream comparison and visualization.

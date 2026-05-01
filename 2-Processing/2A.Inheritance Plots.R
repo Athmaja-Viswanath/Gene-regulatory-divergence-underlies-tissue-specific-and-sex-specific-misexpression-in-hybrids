@@ -1,11 +1,19 @@
 #######Figures looking at expression dominance/inheritance patterns
 
-
+#NOTE: First run 2.Classifying inheritance.R script and then with variable saved, run this script
 ####SCATTERPLOTS FOR INHERITANCE CATEGORIES PER SAMPLE
 
-#H1
+# Summary:
+# This script takes as input DESeq2 differential expression results and precomputed inheritance classifications
+# (2.Classifying inheritance.R), along with external tables for inheritance comparisons and sex-biased genes. 
+# t processes these data to classify and filter genes, and outputs multiple visualizations—including 
+# scatterplots of hybrid vs parental log₂ fold changes, barplots of inheritance category proportions,
+# cross-condition comparison plots, heatmaps, and bubble plots—summarizing inheritance patterns across tissues, 
+# sexes, and hybrids.All outputs from this script are saved in 3-Output/Inheritance Plots
 
-#ms
+##############
+#MALE SOMA - H1
+##############
 
 ms_h1_xx = (cbind(dds.ms.cre.clat.res["ms.cre.clat"], dds.ms.cre.H1.res["ms.cre.H1"], dds.ms.clat.H1.res["ms.clat.H1"], 
            dds.ms.cre.H1.res["log2FoldChange"])) %>% rename(Fc_h1vscre = "log2FoldChange")
@@ -31,12 +39,12 @@ ggplot(ms_h1_xx, aes(ms_h1_xx$Fc_h1vscre, ms_h1_xx$Fc_h1vsclat, color = ms_h1_xx
   theme(strip.background = element_blank(), strip.text=element_blank(),
         axis.title.y=element_text(margin=margin(t = 0, r = -5, b = 0, l = 0)))
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inht_ms_h1_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
+#ggsave(filename = "inht_ms_h1_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
 
 
-
+#######
 ###H2 MS
-
+#######
 ms_h2_xx = (cbind(dds.ms.cre.clat.res["ms.cre.clat"], dds.ms.cre.H2.res["ms.cre.H2"], dds.ms.clat.H2.res["ms.clat.H2"], 
                   dds.ms.cre.H2.res["log2FoldChange"])) %>% rename(Fc_h2vscre = "log2FoldChange")
 ms_h2_xx = cbind(ms_h2_xx,dds.ms.clat.H2.res["log2FoldChange"]) %>% rename(Fc_h2vsclat = "log2FoldChange")
@@ -62,10 +70,11 @@ ggplot(ms_h2_xx, aes(ms_h2_xx$Fc_h2vscre, ms_h2_xx$Fc_h2vsclat, color = ms_h2_xx
   theme(strip.background = element_blank(), strip.text=element_blank(),
         axis.title.y=element_text(margin=margin(t = 0, r = -5, b = 0, l = 0)))
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inht_ms_h2_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
+#ggsave(filename = "inht_ms_h2_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
 
-
+#######
 ##MG H2
+#######
 mg_h2_xx = (cbind(dds.mg.cre.clat.res["mg.cre.clat"], dds.mg.cre.H2.res["mg.cre.H2"], dds.mg.clat.H2.res["mg.clat.H2"], 
                   dds.mg.cre.H2.res["log2FoldChange"])) %>% rename(Fc_h2vscre = "log2FoldChange")
 mg_h2_xx = cbind(mg_h2_xx,dds.mg.clat.H2.res["log2FoldChange"]) %>% rename(Fc_h2vsclat = "log2FoldChange")
@@ -91,10 +100,11 @@ ggplot(mg_h2_xx, aes(mg_h2_xx$Fc_h2vscre, mg_h2_xx$Fc_h2vsclat, color = mg_h2_xx
   theme(strip.background = element_blank(), strip.text=element_blank(),
         axis.title.y=element_text(margin=margin(t = 0, r = -5, b = 0, l = 0)))
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inht_mg_h2_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
+#ggsave(filename = "inht_mg_h2_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
 
+#######
 ####FG H1
-
+#######
 fg_h1_xx = (cbind(dds.fg.cre.clat.res["fg.cre.clat"], dds.fg.cre.H1.res["fg.cre.H1"], dds.fg.clat.H1.res["fg.clat.H1"], 
                   dds.fg.cre.H1.res["log2FoldChange"])) %>% rename(Fc_h1vscre = "log2FoldChange")
 fg_h1_xx = cbind(fg_h1_xx,dds.fg.clat.H1.res["log2FoldChange"]) %>% rename(Fc_h1vsclat = "log2FoldChange")
@@ -119,9 +129,11 @@ ggplot(fg_h1_xx, aes(fg_h1_xx$Fc_h1vscre, fg_h1_xx$Fc_h1vsclat, color = fg_h1_xx
   theme(strip.background = element_blank(), strip.text=element_blank(),
         axis.title.y=element_text(margin=margin(t = 0, r = -5, b = 0, l = 0)))
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inht_fg_h1_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
+#ggsave(filename = "inht_fg_h1_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
 
-####FG H
+##########
+####FG H2
+##########
 
 fg_h2_xx = (cbind(dds.fg.cre.clat.res["fg.cre.clat"], dds.fg.cre.H2.res["fg.cre.H2"], dds.fg.clat.H2.res["fg.clat.H2"], 
                   dds.fg.cre.H2.res["log2FoldChange"])) %>% rename(Fc_h2vscre = "log2FoldChange")
@@ -147,11 +159,11 @@ ggplot(fg_h2_xx, aes(fg_h2_xx$Fc_h2vscre, fg_h2_xx$Fc_h2vsclat, color = fg_h2_xx
   theme(strip.background = element_blank(), strip.text=element_blank(),
         axis.title.y=element_text(margin=margin(t = 0, r = -5, b = 0, l = 0)))
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inht_fg_h2_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
+#ggsave(filename = "inht_fg_h2_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
 
-
+##########
 ##FS H1
-
+##########
 
 fs_h1_xx = (cbind(dds.fs.cre.clat.res["fs.cre.clat"], dds.fs.cre.H1.res["fs.cre.H1"], dds.fs.clat.H1.res["fs.clat.H1"], 
                   dds.fs.cre.H1.res["log2FoldChange"])) %>% rename(Fc_h1vscre = "log2FoldChange")
@@ -177,9 +189,11 @@ ggplot(fs_h1_xx, aes(fs_h1_xx$Fc_h1vscre, fs_h1_xx$Fc_h1vsclat, color = fs_h1_xx
   theme(strip.background = element_blank(), strip.text=element_blank(),
         axis.title.y=element_text(margin=margin(t = 0, r = -5, b = 0, l = 0)))
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inht_fs_h1_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
+#ggsave(filename = "inht_fs_h1_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
 
-####fs H2
+##########
+####FS H2
+##########
 
 fs_h2_xx = (cbind(dds.fs.cre.clat.res["fs.cre.clat"], dds.fs.cre.H2.res["fs.cre.H2"], dds.fs.clat.H2.res["fs.clat.H2"], 
                   dds.fs.cre.H2.res["log2FoldChange"])) %>% rename(Fc_h2vscre = "log2FoldChange")
@@ -205,12 +219,12 @@ ggplot(fs_h2_xx, aes(fs_h2_xx$Fc_h2vscre, fs_h2_xx$Fc_h2vsclat, color = fs_h2_xx
   theme(strip.background = element_blank(), strip.text=element_blank(),
         axis.title.y=element_text(margin=margin(t = 0, r = -5, b = 0, l = 0)))
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inht_fs_h2_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
+#ggsave(filename = "inht_fs_h2_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
 
 
-
-
+##########
 ##H1 WM
+##########
 
 wm_h1_xx = (cbind(dds.wm.cre.clat.res["wm.cre.clat"], dds.wm.cre.H1.res["wm.cre.H1"], dds.wm.clat.H1.res["wm.clat.H1"], 
                   dds.wm.cre.H1.res["log2FoldChange"])) %>% rename(Fc_h1vscre = "log2FoldChange")
@@ -237,9 +251,11 @@ ggplot(wm_h1_xx, aes(wm_h1_xx$Fc_h1vscre, wm_h1_xx$Fc_h1vsclat, color = wm_h1_xx
   theme(strip.background = element_blank(), strip.text=element_blank(),
         axis.title.y=element_text(margin=margin(t = 0, r = -5, b = 0, l = 0)))
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inht_wm_h1_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
+#ggsave(filename = "inht_wm_h1_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
 
+##########
 ##H2 WM
+##########
 
 wm_h2_xx = (cbind(dds.wm.cre.clat.res["wm.cre.clat"], dds.wm.cre.H2.res["wm.cre.H2"], dds.wm.clat.H2.res["wm.clat.H2"], 
                   dds.wm.cre.H2.res["log2FoldChange"])) %>% rename(Fc_h2vscre = "log2FoldChange")
@@ -266,17 +282,17 @@ ggplot(wm_h2_xx, aes(wm_h2_xx$Fc_h2vscre, wm_h2_xx$Fc_h2vsclat, color = wm_h2_xx
   theme(strip.background = element_blank(), strip.text=element_blank(),
         axis.title.y=element_text(margin=margin(t = 0, r = -5, b = 0, l = 0)))
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inht_wm_h2_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
+#ggsave(filename = "inht_wm_h2_scatterplot.pdf", dpi = 300, width = 12, height = 8 )
 
 
-#############
-##Fig2A
+#########################################################################
 ###Barplot of inheritance divergence frequencies across samples and hybrids
+######################################################################
 
 ##plotting proportions across chromosomes
 library(ggstats)
 
-###subsetting to get rid of ambisuous counts
+###subsetting to get rid of ambiguous counts
 inheritance_all_counts$sample = paste(inheritance_all_counts$Sex, inheritance_all_counts$Tissue)
 inheritance_all_counts_a = inheritance_all_counts %>% filter(inheritance_all_counts$Var1 != "ambiguous") %>% select(-Proportion)
 View(inheritance_all_counts)
@@ -288,11 +304,13 @@ ggplot(inheritance_all_counts_a) +
   geom_text(stat = "prop", position = position_fill(.5))+
   facet_wrap(~Hybrid)+
   #scale_y_continuous(expand = expansion(mult = c(0, 0.1)), breaks=seq(0,1,0.25))+
-  ggtitle("Inheritance Pattern (Actual")
+  ggtitle("Inheritance Pattern (Actual)")
 
-#ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/fig2_inheritancepattern.pdf", dpi = 300, width = 18, height = 8 )
+#ggsave(filename = "fig2_inheritancepattern.pdf", dpi = 300, width = 18, height = 8 )
 
+########################
 ##inheritance plot for WM 
+#########################
 
 inheritance_all_counts_wm = inheritance_all_counts_a %>% filter(inheritance_all_counts_a$Tissue == "W")
 View(inheritance_all_counts_wm)
@@ -312,16 +330,14 @@ ggplot(inheritance_all_counts_wm) +
   #scale_y_continuous(expand = expansion(mult = c(0, 0.1)), breaks=seq(0,1,0.25))+
   ggtitle("Inheritance Pattern for WM")
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inht_barplot_WM.pdf", dpi = 300, width = 12, height = 8 )
+#ggsave(filename = "inht_barplot_WM.pdf", dpi = 300, width = 12, height = 8 )
 
 
 ##########################################################################################################3
-######FIG 2B########################################################################################
-
 ####VISUALIZING INHERITANCE BETWEEN MALES AND FEMALES OF H2
 
 ###Proportion of genes between males and females 
-inht_mgxfg_h2 = read.table("Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inheritance_mgxfg_h2.txt", sep="\t", head=T, comment.char="#")
+inht_mgxfg_h2 = read.table("Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/7.inheritance_mgxfg_h2.txt", sep="\t", head=T, comment.char="#")
 View(inht_mgxfg_h2)
 
 ggplot(inht_mgxfg_h2, aes(x=inht_mgxfg_h2$Female_Percentage, y=inht_mgxfg_h2$Male_Percentage, color = inht_mgxfg_h2$Inheritance.Category, shape = Hybrid)) +
@@ -339,14 +355,13 @@ ggplot(inht_mgxfg_h2, aes(x=inht_mgxfg_h2$Female_Percentage, y=inht_mgxfg_h2$Mal
   theme(strip.background = element_rect(fill="grey90", color=NA))+
   ggtitle("H2 MGXFG")
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/fgxmg_h2.pdf", dpi = 300, width = 10, height = 8 )
+#ggsave(filename = "fgxmg_h2.pdf", dpi = 300, width = 10, height = 8 )
 
 ##########################################################################################################3
-######FIG 2C########################################################################################
 
 ###VISUALIZING INHERITANCE BETWEEN MS X FS FOR H1 and H2
 
-fsxms_h1_h2 = read.table("Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inheritance_msxfs_h1h2.txt", sep="\t", head=T, comment.char="#")
+fsxms_h1_h2 = read.table("Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/8.inheritance_msxfs_h1h2.txt", sep="\t", head=T, comment.char="#")
 View(fsxms_h1_h2)
 
 ggplot(fsxms_h1_h2, aes(x=fsxms_h1_h2$Female_Percentage, y=fsxms_h1_h2$Male_Percentage, color = fsxms_h1_h2$Inheritance.Category, shape = Hybrid)) +
@@ -364,11 +379,12 @@ ggplot(fsxms_h1_h2, aes(x=fsxms_h1_h2$Female_Percentage, y=fsxms_h1_h2$Male_Perc
   theme(strip.background = element_rect(fill="grey90", color=NA))+
   ggtitle("H2xH1 MSXFS")
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/fsxms_h1h2.pdf", dpi = 300, width = 10, height = 8 )
+#ggsave(filename = "fsxms_h1h2.pdf", dpi = 300, width = 10, height = 8 )
 
 
-
+########################################################################################
 ###VISUALIZING INHERITANCE ACROSS MALE GONAD AND MALE SOMA IN H2
+########################################################################################
 
 inht_mgxms_h2 = read.table("Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inheritance_mgxms_h2.txt", sep="\t", head=T, comment.char="#")
 View(inht_mgxms_h2)
@@ -389,12 +405,13 @@ ggplot(inht_mgxms_h2, aes(x=inht_mgxms_h2$Gonad_Percentage, y=inht_mgxms_h2$Soma
   theme(strip.background = element_rect(fill="grey90", color=NA))+
   ggtitle("H2 MGXMS")
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/mgxms_h2.pdf", dpi = 300, width = 10, height = 8 )
+#ggsave(filename = "mgxms_h2.pdf", dpi = 300, width = 10, height = 8 )
 
-
+########################################################################################
 ###VISUALIZING INHERITANCE IN FG X FS IN H1 AND H2
+########################################################################################
 
-fgxfs_h1h2 = read.table("Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/inheritance_fgxfs_h1H2.txt", sep="\t", head=T, comment.char="#")
+fgxfs_h1h2 = read.table("10.inheritance_fgxfs_h1H2.txt", sep="\t", head=T, comment.char="#")
 
 View(fgxfs_h1h2)
 ggplot(fgxfs_h1h2, aes(x=fgxfs_h1h2$Gonad_Percentage, y=fgxfs_h1h2$Soma_Percentage, color = fgxfs_h1h2$Inheritance.Category, shape = Hybrid)) +
@@ -412,20 +429,20 @@ ggplot(fgxfs_h1h2, aes(x=fgxfs_h1h2$Gonad_Percentage, y=fgxfs_h1h2$Soma_Percenta
   theme(strip.background = element_rect(fill="grey90", color=NA))+
   ggtitle("H1XH2 FGXFS")
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/fgxfs_h1h2.pdf", dpi = 300, width = 10, height = 8 )
+#ggsave(filename = "fgxfs_h1h2.pdf", dpi = 300, width = 10, height = 8 )
 
 
 
 ##################################################################################################################
-
-#####FIG 2C
 ##identifying if sex-biased genes overlap with transgressive genes (underdominant and overdominant genes)
-###For example - maybe male-biased genes are upregulated in females and shwo up as overdominant
+###For example - maybe male-biased genes are upregulated in females and show up as overdominant
+########################################################################################
+
 
 ####1. Run 1.WT_general DGEresult to get sex-biased genes 
 
 ####Importing file with sex-biased genes
-sex_biased_genes = read.csv(file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 1/mxf_res_genes.csv", header = TRUE,
+sex_biased_genes = read.csv(file = "1-Input/12.mxf_res_genes.csv", header = TRUE,
                              comment.char = "#")
 rownames(sex_biased_genes) = sex_biased_genes$X
 View(sex_biased_genes)
@@ -558,11 +575,14 @@ View(ms_h1_sb_table)
 sex_bised_inht = rbind(fg_h2_sb_table, fg_h1_sb_table, fs_h2_sb_table, fs_h1_sb_table,
                        mg_h2_sb_table, ms_h1_sb_table, ms_h2_sb_table)
 View(sex_bised_inht)
-write.csv(sex_bised_inht, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/sex_biasedandinht.csv")
+
+write.csv(sex_bised_inht, file = "6.sex_biasedandinht.csv")
 
 
-
+###############################################
 ###Heatmap for sex-biased genes and inheritance
+################################################
+
 
 ggplot(sex_bised_inht %>% filter(Var2 != "ambiguous"), aes(x= Var2, y=Var1, fill=Freq)) +
   geom_tile() +
@@ -582,7 +602,7 @@ ggplot(sex_bised_inht %>% filter(Var2 != "ambiguous"), aes(x= Var2, y=Var1, fill
         #axis.text.x = element_blank())
         axis.text.x = element_text(angle=90, hjust=1, vjust=0.5, size=10))
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/sex_biasedvsinht_heatmap.pdf", dpi = 300, width = 20, height = 8 )
+ggsave(filename = "3-Output/Inheritance Plots/sex_biasedvsinht_heatmap.pdf", dpi = 300, width = 20, height = 8 )
 
 ##Barplot
 sex_bised_inht_a = sex_bised_inht %>% filter(Var2 != "ambiguous")
@@ -590,17 +610,17 @@ ggplot(sex_bised_inht_a, aes(x = sex_bised_inht_a$Var1, y = sex_bised_inht_a$Fre
   geom_bar(stat = "identity")+
   facet_wrap(~Sample)
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/sex_bsvsinht_barplot1.pdf", dpi = 300, width = 20, height = 8 )
+ggsave(filename = "3-Output/Inheritance Plots/sex_bsvsinht_barplot1.pdf", dpi = 300, width = 20, height = 8 )
 
 ggplot(sex_bised_inht_a, aes(x = sex_bised_inht_a$Var2, y = sex_bised_inht_a$Freq, fill = sex_bised_inht_a$Var1))+
   geom_bar(stat = "identity")+
   facet_wrap(~Sample)
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/sex_bsvsinht_barplot2.pdf", dpi = 300, width = 20, height = 8 )
+ggsave(filename = "3-Output/Inheritance Plots/sex_bsvsinht_barplot2.pdf", dpi = 300, width = 20, height = 8 )
 
 
 ###Line plot 
-sex_bised_inht = read.csv("Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/sex_biasedandinht.csv", sep = ",")
+sex_bised_inht = read.csv("1-Input/13.sex_biasedandinht.csv", sep = ",")
 str(sex_bised_inht)
 sex_bised_inht$Var1 = as.factor(sex_bised_inht$Var1)
 sex_bised_inht$Var2 = as.factor(sex_bised_inht$Var2)
@@ -616,13 +636,14 @@ sex_bised_inht %>% filter(Var2 != "ambiguous" & Var2 != "no change") %>%
   facet_wrap(~Sample) +
   #stat_smooth(method = "lm") +
   ggtitle("Sex biased vs inht")
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 2/sex_bsvsinht_lineplot.pdf", dpi = 300, width = 20, height = 8 )
+
+ggsave(filename = "3-Output/Inheritance Plots/sex_bsvsinht_lineplot.pdf", dpi = 300, width = 20, height = 8 )
 
 #########################################################################################################3
 #######VISUALIZING INHERITANCE BETWEEN H1 AND H2
 #########################################################################################################3
 
-inht_h1xh2 = read.table("Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 4/inheritance_all_h1xh2.txt", sep="\t", head=T, comment.char="#")
+inht_h1xh2 = read.table("1-Input/14.inheritance_all_h1xh2.txt", sep="\t", head=T, comment.char="#")
 View(inht_h1xh2)
 ggplot(inht_h1xh2, aes(x=inht_h1xh2$H1_percentage, y=inht_h1xh2$H2_percentage, color = inht_h1xh2$Inheritance_Category, shape = Tissue)) +
   geom_point(alpha=0.8, show.legend=T, size=8) +
@@ -638,7 +659,7 @@ ggplot(inht_h1xh2, aes(x=inht_h1xh2$H1_percentage, y=inht_h1xh2$H2_percentage, c
   facet_rep_wrap(~Sex) +
   theme(strip.background = element_rect(fill="grey90", color=NA))
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 4/inht_h1xh2_1.pdf", dpi = 300, width = 15, height = 8 )
+ggsave(filename = "3-Output/Inheritance Plots/inht_h1xh2_1.pdf", dpi = 300, width = 15, height = 8 )
 
 ggplot(inht_h1xh2, aes(x=inht_h1xh2$H1_percentage, y=inht_h1xh2$H2_percentage, color = inht_h1xh2$Inheritance_Category, shape = Sex)) +
   geom_point(alpha=0.8, show.legend=T, size=8, shape = 15) +
@@ -655,12 +676,13 @@ ggplot(inht_h1xh2, aes(x=inht_h1xh2$H1_percentage, y=inht_h1xh2$H2_percentage, c
   facet_rep_wrap(~Tissue+Sex) +
   theme(strip.background = element_rect(fill="grey90", color=NA))
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 4/inht_h1xh2_2.pdf", dpi = 300, width = 18, height = 8 )
+ggsave(filename = "3-Output/Inheritance Plots/inht_h1xh2_2.pdf", dpi = 300, width = 18, height = 8 )
 
 
 
 #######################################################################################################
 ###COMAPRING H1 AND H2 
+#######################################################################################################
 
 ###INHERITANCE CATEGORY BETWEEN H1 AND H2
 
@@ -726,7 +748,7 @@ ggplot(data = fg.h1h2.intersection, aes(x=H1, y=H2, size = Intersection))+
   scale_size(range = c(2, 20), name="Number of Genes")
 
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 4/fg.h1h2.inht.pdf", dpi = 300, width = 20, height = 18 )
+ggsave(filename = "3-Output/Inheritance Plots/fg.h1h2.inht.pdf", dpi = 300, width = 20, height = 18 )
 
 ###########
 ###FS######
@@ -782,7 +804,7 @@ ggplot(data = fs.h1h2.intersection, aes(x=H1, y=H2, size = Intersection))+
   scale_size(range = c(2, 20), name="Number of Genes")
 
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 4/fs.h1h2.inht.pdf", dpi = 300, width = 20, height = 18 )
+#ggsave(filename = "3-Output/Inheritance Plots/fs.h1h2.inht.pdf", dpi = 300, width = 20, height = 18 )
 
 ###########
 ###MS######
@@ -837,7 +859,7 @@ ggplot(data = ms.h1h2.intersection, aes(x=H1, y=H2, size = Intersection))+
   scale_size(range = c(2, 20), name="Number of Genes")
 
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 4/ms.h1h2.inht.pdf", dpi = 300, width = 20, height = 18 )
+#ggsave(filename = "3-Output/Inheritance Plots/ms.h1h2.inht.pdf", dpi = 300, width = 20, height = 18 )
 
 
 ###########
@@ -893,11 +915,12 @@ ggplot(data = wm.h1h2.intersection, aes(x=H1, y=H2, size = Intersection))+
   scale_size(range = c(2, 20), name="Number of Genes")
 
 
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 4/wm.h1h2.inht.pdf", dpi = 300, width = 20, height = 18 )
+#ggsave(filename = "3-Output/Inheritance Plots/wm.h1h2.inht.pdf", dpi = 300, width = 20, height = 18 )
 
 
 ##########################################################################################33
 ###MAKING CUMULATIVE BUBBLEPLOT TO MAKE ALL UNITS/SCALE FOR LEGEND SAME
+##########################################################################################33
 
 ##COMMBINING ALL INTERSECTION DATA
 inht.h1h2.intersection = rbind(fg.h1h2.intersection,fs.h1h2.intersection, ms.h1h2.intersection)
@@ -908,7 +931,7 @@ ggplot(data = inht.h1h2.intersection, aes(x=H1, y=H2, size = Intersection))+
   geom_text(aes(label = Intersection), size = 5, colour = "red", nudge_x = 0.1, nudge_y = 0.1)+
   scale_size_continuous("Number of genes", breaks=c(500,1000,1500,2000,2500,3000),labels=c(500,1000,1500,2000,2500,3000),range = c(1,15))
   
-ggsave(filename = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/Part 4/all.h1h2.inht.pdf", dpi = 300, width = 33, height = 10 )
+ggsave(filename = "3-Output/Inheritance Plots/all.h1h2.inht.pdf", dpi = 300, width = 33, height = 10 )
 
 ggplot(data = inht.h1h2.intersection, aes(x=H1, y=H2, size = Intersection))+
   geom_count()+

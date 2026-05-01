@@ -1,4 +1,45 @@
-###Differential gene expression analysis of ortholgous genes
+###########################################################################################################
+# Comparative Differential Gene Expression Analysis of Orthologous Genes in C. remanei and C. latens
+###########################################################################################################
+
+###########################################################################################################
+# Summary:
+###########################################################################################################
+
+# This script performs differential gene expression analysis on one-to-one orthologous genes between 
+# C. remanei and C. latens using the DESeq2 framework. Raw count data from both species are filtered 
+# to retain orthologs, combined into a unified dataset, and analyzed using a multifactor design that 
+# accounts for species, tissue (gonad vs soma), sex, and batch effects, including interaction terms.
+# 
+# The workflow identifies:
+#   
+# Species-biased genes (expression differences between species)
+# Tissue-biased genes (gonad vs soma expression)
+# Sex-biased genes (male vs female expression)
+# 
+# Significant genes are classified based on adjusted p-values and log2 fold changes. 
+# The script further integrates chromosomal annotation data to examine the genomic distribution of biased 
+# genes and generates publication-quality visualizations (bar plots and proportional plots) to summarize 
+# patterns across chromosomes and biological categories.
+
+###########################################################################################################
+# Inputs:
+#   1.new_1to1_orthologgenelist.txt: One-to-one ortholog gene list
+# 2.C.remanei_cumulative.txt & 3.C.latens_cumulative.txt: Count matrices for C. remanei and C. latens
+# 4.Cremanie_genenames_and_chromosome.txt: Chromosome annotation file
+# 
+# Outputs:
+#   
+# Differential expression result tables for species-, tissue-, and sex-biased genes
+# Summary statistics (e.g., counts of biased vs conserved genes)
+# Visualization plots showing gene category distributions and chromosomal enrichment patterns
+# 
+#(Optional) Gene lists formatted for downstream enrichment analysis (e.g., g:Profiler)
+###########################################################################################################
+
+
+
+#Loading packages
 library(DESeq2)
 library(ggplot2)
 library(cowplot) #add on to ggplot for better themes and figure customization
@@ -9,12 +50,13 @@ library(RColorBrewer)
 library(colorBlindness)
 library(colorspace)
 library(tidyverse)
+library(ggstats)
 
 theme_set(theme_classic())
 setwd("C:/Users/athma/Desktop/RNASeq_results/DGE analysis and Data/New annotation/")
 
 ###Data prep for Wt x WT
-orthologs = read.table("new_1to1_orthologgenelist.txt", sep="\t", head=T, comment.char="#")
+orthologs = read.table("1.new_1to1_orthologgenelist.txt", sep="\t", head=T, comment.char="#")
 head(orthologs)
 cre_ortho = orthologs[, 1]
 clat_ortho = orthologs[ ,2]
@@ -29,19 +71,20 @@ head(clat_ortho)
 ############
 
 #C.remanei
-cre_counts = read.table("C.remanei_cumulative.txt", sep="\t", head=T, row.name=1, comment.char = "#")
+cre_counts = read.table("2.C.remanei_cumulative.txt", sep="\t", head=T, row.name=1, comment.char = "#")
 cre_counts_ortho = cre_counts[cre_ortho, -c(13:15)] ##not including Whole animal samples
 rownames(cre_counts_ortho) = cumulative_ortho #changing row names
 nrow(cre_counts_ortho)
 colnames(cre_counts_ortho)
 
 #C.latens
-clat_counts = read.table("C.latens_cumulative.txt", sep="\t", head=T, row.name=1, comment.char = "#")
+clat_counts = read.table("3.C.latens_cumulative.txt", sep="\t", head=T, row.name=1, comment.char = "#")
 clat_counts_ortho = clat_counts[clat_ortho, -c(13:15)]#removing WM samples
 rownames(clat_counts_ortho) = cumulative_ortho
 nrow(clat_counts_ortho)
 names(clat_counts_ortho)
 nrow(clat_counts)
+
 #Combining all data
 wt_counts_orthologs = cbind(cre_counts_ortho, clat_counts_ortho)
 colnames(wt_counts_orthologs)
@@ -72,6 +115,7 @@ mod_mat_wt <- model.matrix(design(dds_wt), colData(dds_wt))
 ############################################################################################
 #1.Effect of Species on gene expression 
 ############################################################################################
+
 #Define coefficient vectors for each condition
 cre = colMeans(mod_mat_wt[dds_wt$species == "Cre", ])
 clat = colMeans(mod_mat_wt[dds_wt$species == "Clat", ])
@@ -208,12 +252,9 @@ ggplot(sp_genes_count, aes(x = sp_genes_count$gene_category, y = sp_genes_count$
 ####################################################################################################################################
 
 ##adding chromosomal information to the dataframe
-chrom_info = read.table("Cremanie_genenames_and_chromosome.txt", fill = T)
+chrom_info = read.table("4.Cremanie_genenames_and_chromosome.txt", fill = T)
 head(chrom_info)
 
-t##adding chromosomal information to the dataframe
-chrom_info = read.table("Cremanie_genenames_and_chromosome.txt", fill = T)
-head(chrom_info)
 chrom_info_X = subset(chrom_info, V1 =="X")
 chrom_info_I = subset(chrom_info, V1 =="I")
 chrom_info_II = subset(chrom_info, V1 =="II")
@@ -287,7 +328,6 @@ ggplot(spgenes_freq, aes(x = spgenes_freq$Var1, y = spgenes_freq$Freq, fill = sp
 #####Proportion of species-biased genes on chromosomes###################################################3
 
 ##plotting proportions across chromosomes
-library(ggstats)
 
 ggplot(spgenes_freq) +
   aes(x = spgenes_freq$Var1, fill = spgenes_freq$Var2, weight = spgenes_freq$Freq, by = spgenes_freq$Var1) +
@@ -398,8 +438,6 @@ ggplot(tsgenes_freq, aes(x = tsgenes_freq$Var1, y = tsgenes_freq$Freq, fill = ts
 #####Proportion of tissue-biased genes on chromosomes###################################################3
 
 ##plotting proportions across chromosomes
-library(ggstats)
-
 ggplot(tsgenes_freq) +
   aes(x = tsgenes_freq$Var1, fill = tsgenes_freq$Var2, weight = tsgenes_freq$Freq, by = tsgenes_freq$Var1) +
   geom_bar(position = "fill") +

@@ -1,3 +1,34 @@
+
+#Classification in inheritance and regulatory divergence in Hybrids and Parental lines
+# Summary:
+# This script uses DESeq2 to perform differential gene expression analyses across parental species 
+# (C. remanei, C. latens) and hybrid lines (H1, H2) using orthologous genes. It compares expression across 
+# multiple tissue–sex combinations (gonad/soma/whole body; male/female) to identify expression divergence, 
+# and classifies genes into inheritance categories (e.g., dominant, additive, overdominant). 
+# The script further integrates chromosomal information to analyze X-linked genes and infer 
+# regulatory divergence (cis, trans, compensatory) in hybrid males.
+# 
+# Inputs:
+#   
+# 1.new_1to1_orthologgenelist.txt: One-to-one ortholog gene list
+# 2.C.remanei_cumulative.txt & 3.C.latens_cumulative.txt : Parental count matrices 
+# 5.H1_ase_counts.txt & 6.H2_ase_counts.txt : Allele-specific expression count files for hybrids
+# 4.Cremanie_genenames_and_chromosome.txt: Chromosome annotation file
+# 
+# Outputs:
+#   
+# Differential expression result tables for all pairwise comparisons (parent–parent, parent–hybrid) across 
+# tissues and sexes
+# Gene classifications into inheritance categories (dominant, additive, overdominant, underdominant, etc.)
+# Proportions of genes in each inheritance category across conditions (compiled summary table)
+# Regulatory divergence classifications (cis-only, trans-only, compensatory, conserved) for X-linked genes 
+# in hybrid males
+# (Optional) Exportable summary tables for downstream analysis and visualization
+
+
+
+
+#Loading packages
 library(DESeq2)
 library(ggplot2)
 library(cowplot) #add on to ggplot for better themes and figure customization
@@ -8,39 +39,33 @@ library(gdata)
 library(tidyverse)
 setwd("C:/Users/athma/Desktop/RNASeq_results/DGE analysis and Data/New annotation/")
 
-orthologs = read.table("new_1to1_orthologgenelist.txt", sep="\t", head=T, comment.char="#")
+orthologs = read.table("1.new_1to1_orthologgenelist.txt", sep="\t", head=T, comment.char="#")
 head(orthologs)
 cre_ortho = orthologs[, 1]
 clat_ortho = orthologs[ ,2]
 cumulative_ortho = orthologs[,3]
 
 #C.remanei
-cre_counts = read.table("C.remanei_cumulative.txt", sep="\t", head=T, row.name=1, comment.char = "#")
+cre_counts = read.table("2.C.remanei_cumulative.txt", sep="\t", head=T, row.name=1, comment.char = "#")
 cre_counts_ortho = cre_counts[cre_ortho, ]
 rownames(cre_counts_ortho) = cumulative_ortho
 nrow(cre_counts_ortho)
 
-# head(cre_ortho)
-# head(cre_counts)
-# head(cre_counts_ortho)
-# cre_counts[c("remanei_genome_00002719"), ]
-# cre_counts_ortho[c("remanei_genome_00002719"), ]
-
 #C.latens
-clat_counts = read.table("C.latens_cumulative.txt", sep="\t", head=T, row.name=1, comment.char = "#")
+clat_counts = read.table("3.C.latens_cumulative.txt", sep="\t", head=T, row.name=1, comment.char = "#")
 clat_counts_ortho = clat_counts[clat_ortho, ]
 rownames(clat_counts_ortho) = cumulative_ortho
 nrow(clat_counts_ortho)
 
 ##H1 
-H1_ase= read.table("H1_ase_counts.txt", sep="\t", head=T, row.name=1, comment.char = "#")
+H1_ase= read.table("5.H1_ase_counts.txt", sep="\t", head=T, row.name=1, comment.char = "#")
 H1_genecounts = cbind(H1_ase[,seq(1,24,2)] + H1_ase[,seq(2,24,2)])#adding allele specific readcounts to get one counts/gen
 H1_genecounts = H1_genecounts[cumulative_ortho, ]
 head(H1_genecounts)
 names(H1_ase)
 
 ###H2
-H2_ase= read.table("H2_ase_counts.txt", sep="\t", head=T, row.name=1, comment.char = "#")
+H2_ase= read.table("6.H2_ase_counts.txt", sep="\t", head=T, row.name=1, comment.char = "#")
 H2_genecounts = cbind(H2_ase[,seq(1,30,2)] + H2_ase[,seq(2,30,2)])#adding allele specific readcounts to get one counts/gen
 H2_genecounts = H2_genecounts[cumulative_ortho, ] #adds togerth but retain first columns name
 head(H2_genecounts)
@@ -104,6 +129,8 @@ dds.fg.cre.clat.res = cbind(as.data.frame(dds.fg.cre.clat),as.data.frame(dds.fg.
 dds.fg.cre.clat.res = dds.fg.cre.clat.res[order(row.names(dds.fg.cre.clat.res)), ]
 View(dds.fg.cre.clat.res)
 View(dds.fg.cre.clat.res %>% filter(dds.fg.cre.clat.res$fg.cre.clat == 0))
+
+
 ##FS X FS
 
 colnames(counts_orthologs)
@@ -194,6 +221,10 @@ dds.wm.cre.clat.res = cbind(as.data.frame(dds.wm.cre.clat),as.data.frame(dds.wm.
 dds.wm.cre.clat.res = dds.wm.cre.clat.res[order(row.names(dds.wm.cre.clat.res)), ]
 #View(dds.wm.cre.clat.res)
 table(dds.wm.cre.clat.res$wm.cre.clat)
+
+#########################################################################################################
+##H1
+#########################################################################################################
 
 ##C.remanei x H1
 
@@ -369,8 +400,13 @@ dds.wm.clat.H1.res = dds.wm.clat.H1.res[order(row.names(dds.wm.clat.H1.res)), ]
 #View(dds.wm.clat.H1.res)
 
 table(dds.wm.clat.H1.res$wm.clat.H1)
-#####Dividing genes into inheritance categories 
 
+
+###########################################################################################################
+#####Dividing genes into inheritance categories 
+###########################################################################################################
+
+#Defining funciton to classify inheritance
 classify_inheritance <- function(x){
   y = paste(x[,1], x[,2], x[,3])
   cl = rep(NA, dim(x)[1])
@@ -384,49 +420,60 @@ classify_inheritance <- function(x){
   return(cl)
 }
 
+##############
 ###H1
+##############
+
 #FG 
 ##all these columns/DEG analyses are in the RScript "Differential gene expression analysis_new annotations"
 dds.fg.h1 = data.frame(dds.fg.cre.clat.res["fg.cre.clat"], dds.fg.cre.H1.res["fg.cre.H1"], dds.fg.clat.H1.res["fg.clat.H1"]) #taking the newly created columns together
 dds.fg.h1 = na.omit(dds.fg.h1)
 dim(dds.fg.h1)
+
+#classifying inheritance
 dds.fg.h1$inheritance.fg = classify_inheritance(dds.fg.h1)
 head(dds.fg.h1)
 nrow(dds.fg.h1)
-fg_h1_inht = table(dds.fg.h1$inheritance.fg)
+fg_h1_inht = table(dds.fg.h1$inheritance.fg) #gives number of genes in each inheritance category
+
 
 
 ##FS
 dds.fs.h1 = data.frame(dds.fs.cre.clat.res["fs.cre.clat"], dds.fs.cre.H1.res["fs.cre.H1"], dds.fs.clat.H1.res["fs.clat.H1"]) #taking the newly created columns together
 dds.fs.h1 = na.omit(dds.fs.h1)
 dim(dds.fs.h1)
+#classifying inheritance
 dds.fs.h1$inheritance.fs = classify_inheritance(dds.fs.h1)
 head(dds.fs.h1)
-fs_h1_inht = table(dds.fs.h1$inheritance.fs)
+fs_h1_inht = table(dds.fs.h1$inheritance.fs)#gives number of genes in each inheritance category
 
 ##MS
 
 dds.ms.h1 = cbindX(dds.ms.cre.clat.res["ms.cre.clat"], dds.ms.cre.H1.res["ms.cre.H1"], dds.ms.clat.H1.res["ms.clat.H1"]) #taking the newly created columns together
 dds.ms.h1 = na.omit(dds.ms.h1)
 dim(dds.ms.h1)
+#classifying inheritance
 dds.ms.h1$inheritance.ms = classify_inheritance(dds.ms.h1)
 head(dds.ms.h1)
-ms_h1_inht = table(dds.ms.h1$inheritance.ms)
+ms_h1_inht = table(dds.ms.h1$inheritance.ms)#gives number of genes in each inheritance category
 
 #WM
 dds.wm.h1 = cbind(dds.wm.cre.clat.res["wm.cre.clat"], dds.wm.cre.H1.res["wm.cre.H1"], dds.wm.clat.H1.res["wm.clat.H1"]) #taking the newly created columns together
 dds.wm.h1 = na.omit(dds.wm.h1)
 dim(dds.wm.h1)
+#classifying inheritance
 dds.wm.h1$inheritance.wm = classify_inheritance(dds.wm.h1)
 head(dds.wm.h1)
-wm_h1_inht = table(dds.wm.h1$inheritance.wm)
+wm_h1_inht = table(dds.wm.h1$inheritance.wm)#gives number of genes in each inheritance category
 
 
 
 ##########################################################################################################################
 ##H2
+#########################################################################################################
 
-##2. Cre x H2
+#Cremanei x H2
+
 #FG x FG
 colnames(counts_orthologs)
 fg.cre.H2 = counts_orthologs[ , c(1,2,3,43,44,45)]
@@ -529,8 +576,9 @@ dds.mg.cre.H2.res = cbind(as.data.frame(dds.mg.cre.H2),as.data.frame(dds.mg.cre.
 
 dds.mg.cre.H2.res = dds.mg.cre.H2.res[order(row.names(dds.mg.cre.H2.res)), ]
 
-################################################################################
+
 ##C. latens x H2
+
 
 #FG x FG
 colnames(counts_orthologs)
@@ -631,49 +679,61 @@ dds.mg.clat.H2.res = cbind(as.data.frame(dds.mg.clat.H2),as.data.frame(dds.mg.cl
                          dplyr::select(mg.clat.H2)) #added another column where if padj > 0.05, value is 0, if not look at log2foldchange, if log2fold > 0 then 1 else -1
 dds.mg.clat.H2.res = dds.mg.clat.H2.res[order(row.names(dds.mg.clat.H2.res)), ]
 
-#####Categorization of inheritance for H2############################################################
+#########################################################################################################
+#####Categorization of inheritance for H2
+#########################################################################################################
+
+
 #FG 
 
 dds.fg.h2 = data.frame(dds.fg.cre.clat.res["fg.cre.clat"], dds.fg.cre.H2.res["fg.cre.H2"], dds.fg.clat.H2.res["fg.clat.H2"]) #taking the newly created columns together
 dds.fg.h2 = na.omit(dds.fg.h2)
 dim(dds.fg.h2)
+#Classifying inheritance
 dds.fg.h2$inheritance.fg = classify_inheritance(dds.fg.h2)
 head(dds.fg.h2)
-fg_h2_inht = table(dds.fg.h2$inheritance.fg)
+fg_h2_inht = table(dds.fg.h2$inheritance.fg)#number of genes in inheritance category
 
 ##FS
 dds.fs.h2 = data.frame(dds.fs.cre.clat.res["fs.cre.clat"], dds.fs.cre.H2.res["fs.cre.H2"], dds.fs.clat.H2.res["fs.clat.H2"]) #taking the newly created columns together
 dds.fs.h2 = na.omit(dds.fs.h2)
 dim(dds.fs.h2)
+#Classifying inheritance
 dds.fs.h2$inheritance.fs = classify_inheritance(dds.fs.h2)
 head(dds.fs.h2)
-fs_h2_inht = table(dds.fs.h2$inheritance.fs)
+fs_h2_inht = table(dds.fs.h2$inheritance.fs)#number of genes in inheritance category
 
 #MG 
 dds.mg.h2 = cbindX(dds.mg.cre.clat.res["mg.cre.clat"], dds.mg.cre.H2.res["mg.cre.H2"], dds.mg.clat.H2.res["mg.clat.H2"]) #taking the newly created columns together
 dds.mg.h2 = na.omit(dds.mg.h2)
 dim(dds.mg.h2)
+#Classifying inheritance
 dds.mg.h2$inheritance.mg = classify_inheritance(dds.mg.h2)
 head(dds.mg.h2)
-mg_h2_inht = table(dds.mg.h2$inheritance.mg)
+mg_h2_inht = table(dds.mg.h2$inheritance.mg)#number of genes in inheritance category
 
 ##MS
 dds.ms.h2 = cbindX(dds.ms.cre.clat.res["ms.cre.clat"], dds.ms.cre.H2.res["ms.cre.H2"], dds.ms.clat.H2.res["ms.clat.H2"]) #taking the newly created columns together
 dds.ms.h2 = na.omit(dds.ms.h2)
 dim(dds.ms.h2)
+#Classifying inheritance
 dds.ms.h2$inheritance.ms = classify_inheritance(dds.ms.h2)
 head(dds.ms.h2)
-ms_h2_inht = table(dds.ms.h2$inheritance.ms)
+ms_h2_inht = table(dds.ms.h2$inheritance.ms)#number of genes in inheritance category
 
 #WM
 dds.wm.h2 = cbind(dds.wm.cre.clat.res["wm.cre.clat"], dds.wm.cre.H2.res["wm.cre.H2"], dds.wm.clat.H2.res["wm.clat.H2"]) #taking the newly created columns together
 dds.wm.h2 = na.omit(dds.wm.h2)
 dim(dds.wm.h2)
+#Classifying inheritance
 dds.wm.h2$inheritance.wm = classify_inheritance(dds.wm.h2)
 head(dds.wm.h2)
-wm_h2_inht = table(dds.wm.h2$inheritance.wm)
+wm_h2_inht = table(dds.wm.h2$inheritance.wm)#number of genes in inheritance category
 
+###############################
 ###Making cumulative data 
+###############################
+
 fg_h1_inht.prop = cbind(as.data.frame(fg_h1_inht),as.data.frame(fg_h1_inht) %>%
                           mutate(Proportion = prop.table(fg_h1_inht)) %>%
                           mutate(Sex = c(rep("F", 7))) %>%
@@ -740,16 +800,17 @@ mg_h2_inht.prop = cbind(as.data.frame(mg_h2_inht),as.data.frame(mg_h2_inht) %>%
 inheritance_all_counts = rbind(fg_h1_inht.prop, fg_h2_inht.prop, fs_h1_inht.prop, fs_h2_inht.prop,
                                ms_h1_inht.prop, ms_h2_inht.prop, wm_h1_inht.prop, wm_h2_inht.prop, mg_h2_inht.prop)
 
-# write.csv(inheritance_all_counts, file = "Allele Specific Expression/Hybrid Analysis/Basic Results/inheritance_all_counts.csv")
+# write.csv(inheritance_all_counts, file = "Allele Specific Expression/Hybrid Analysis/Basic Results/1.Inheritance_all_counts.csv")
 # 
 # write.csv(inheritance_all_counts, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/inheritance_all_counts.csv")
 
 
 ##################################################################################################################
-#####CLASSIFYING REGULATORY DIVERGENCE FOR X-LINKED GENES OF F1 HYBRID MALES############################
-#########################################################################################################
+#####CLASSIFYING REGULATORY DIVERGENCE FOR X-LINKED GENES OF F1 HYBRID MALES
+##############################################################################################################
 
 #####Classifying Regulatory divergecne for X-linked genes in Males
+#(it is base don inheritnace pattern hence in this script)
 
 ##For males from H1 where X-chromosomes if from C. remanei mother
 Cre_X_regulatory_divergence <- function(x){
@@ -777,7 +838,7 @@ Clat_X_regulatory_divergence <- function(x){
 
 ##########################################################################################
 ##adding chromosomal information to the orthologous gene information
-chrom_info = read.table("Cremanie_genenames_and_chromosome.txt", fill = T) ##no X-chromosome in C.latens so using C.r emanei X-shormosome for both
+chrom_info = read.table("4.Cremanie_genenames_and_chromosome.txt", fill = T) ##no X-chromosome in C.latens so using C.r emanei X-shormosome for both
 chrom_info_X = subset(chrom_info, V1 =="X")
 chrom_info_I = subset(chrom_info, V1 =="I")
 chrom_info_II = subset(chrom_info, V1 =="II")
@@ -805,17 +866,17 @@ nrow(orthologs_chr) ##3loss of genes on scaffolds
 nrow(orthologs)
 nrow(ortho_X)
 
-# write.table(orthologs_chr, file = "orthologs_chr.txt", sep = "\t",quote = FALSE,
+# write.table(orthologs_chr, file = "2.Orthologs_chr.txt", sep = "\t",quote = FALSE,
 #            row.names = FALSE)
 
 
 ##########################################################################################################
-###########H2 MALE SAMPLES WHICH HAVE C.LATENS X-CHROMOSOME###############################################
+###    H2 MALE SAMPLES WHICH HAVE C.LATENS X-CHROMOSOME
 ##########################################################################################################
 
-##########################################################################################################
+######################
 #####H2 MS
-##########################################################################################################
+######################
 
 dim(dds.ms.h2)
 
@@ -824,9 +885,9 @@ dds.ms.h2_X$reg.div = Clat_X_regulatory_divergence(dds.ms.h2_X)
 table(dds.ms.h2_X$reg.div)
 names(dds.ms.h2_X)
 
-##########################################################################################################
+#######################
 #####H2 MG
-##########################################################################################################
+#######################
 ##changing rownames to new column
 dim(dds.mg.h2)
 
@@ -835,9 +896,9 @@ dds.mg.h2_X$reg.div = Clat_X_regulatory_divergence(dds.mg.h2_X)
 table(dds.mg.h2_X$reg.div)
 
 
-##########################################################################################################
+########################
 #####H2 WM
-##########################################################################################################
+########################
 ##changing rownames to new column
 head(dds.wm.h2)
 dds.wm.h2_X = na.omit(dds.wm.h2[ortho_X$C..remanei.Gene.name_C.latens.Gene.name, ])
@@ -846,12 +907,12 @@ table(dds.wm.h2_X$reg.div)
 
 
 ##########################################################################################################
-###########H1 MALE SAMPLES WHICH HAVE C.REMANEI X-CHROMOSOME###############################################
+#### H1 MALE SAMPLES WHICH HAVE C.REMANEI X-CHROMOSOME
 ##########################################################################################################
 
-##########################################################################################################
+###########################
 #####H1 MS
-##########################################################################################################
+##########################
 
 ##changing rownames to new column
 head(dds.ms.h1)
@@ -860,14 +921,16 @@ dds.ms.h1_X = na.omit(dds.ms.h1[ortho_X$C..remanei.Gene.name_C.latens.Gene.name,
 dds.ms.h1_X$reg.div = Cre_X_regulatory_divergence (dds.ms.h1_X)
 table(dds.ms.h1_X$reg.div)
 
-##########################################################################################################
+############################
 #####H1 WM
-##########################################################################################################
+############################
 ##changing rownames to new column
 head(dds.wm.h1)
 dds.wm.h1_X = na.omit(dds.wm.h1[ortho_X$C..remanei.Gene.name_C.latens.Gene.name, ])
 dds.wm.h1_X$reg.div = Cre_X_regulatory_divergence(dds.wm.h1_X)
 table(dds.wm.h1_X$reg.div)
 
-####Move to "Allele Specific expression" RScript
+
+#####################################################
+####Move to "3.Allele Specific expression" RScript
 

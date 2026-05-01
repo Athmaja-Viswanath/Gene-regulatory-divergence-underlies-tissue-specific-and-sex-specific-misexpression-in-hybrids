@@ -1,3 +1,40 @@
+# Classification of Regulatory Divergence and Allele-Specific Expression in Hybrids and Parental Lin
+# Summary:
+#   This script performs allele-specific expression (ASE) and regulatory divergence analyses using DESeq2
+# across parental species (C. remanei, C. latens) and hybrid lines (H1, H2) across multiple tissue–sex
+# combinations (gonad, soma, whole body; male and female). It quantifies allele-specific expression in hybrids,
+# integrates parental expression to infer cis and trans regulatory effects, and classifies genes into regulatory
+# divergence categories (e.g., conserved, cis-only, trans-only, compensatory, enhancing, ambiguous).
+# Chromosomal information is incorporated to distinguish autosomal vs X-linked genes, with X-linked genes
+# requiring lineage-specific classification due to inheritance of sex chromosomes in hybrids.
+# The script also aggregates results into summary tables of regulatory categories across conditions for downstream comparison.
+
+# Inputs:
+#   1. Hybrid_allele_counts: Allele-specific read count matrix for hybrid samples (H1, H2)
+# 2. coldata_h: Sample metadata (hybrid identity, tissue type, sex, batch, species)
+# 3. dds_*_cre.clat objects: Precomputed DESeq2 results for parental differential expression
+# 4. orthologs_chr.txt: Gene–chromosome annotation file (including X vs autosome assignment)
+# 5. ortho_X: Predefined list of X-linked orthologs
+# 6. precomputed regulatory functions: getTransEffects(), get_regulation_type(),
+# Cre_X_regulatory_divergence(), Clat_X_regulatory_divergence()
+
+# Outputs:
+#   1. ASE DESeq2 result objects for each hybrid–tissue–sex combination (H1/H2 × G/S/W × M/F)
+# 2. Gene-level ASE classification tables (direction of allelic bias: +1, -1, 0)
+# 3. cis/trans regulatory effect p-value tables (FDR-corrected trans-effect estimates per gene)
+# 4. Integrated gene-level dataframe combining:
+#   - parental expression (log2FC)
+# - hybrid ASE (log2FC and significance)
+# - trans-effect statistics
+# - inferred regulatory divergence class
+# 5. Chromosome-annotated datasets separating autosomal and X-linked genes
+# 6. Regulatory divergence summary tables per condition (e.g., ms_h1_table, wm_h2_table)
+# 7. Chromosome-stratified contingency tables of regulatory categories (type × chromosome)
+# 8. Proportion tables summarizing regulatory divergence classes across hybrids, tissues, and sexes
+# 9. Final combined dataset (regdiv_all_counts) summarizing all conditions for cross-comparison
+
+
+
 ###Allele Specific Expression Analysis
 library(DESeq2)
 library(edgeR)
@@ -15,7 +52,7 @@ theme_set(theme_classic())
 setwd("C:/Users/athma/Desktop/RNASeq_results/DGE analysis and Data/New annotation/")
 
 ###Data prep for Wt x WT
-orthologs = read.table("new_1to1_orthologgenelist.txt", sep="\t", head=T, comment.char="#")
+orthologs = read.table("1.new_1to1_orthologgenelist.txt", sep="\t", head=T, comment.char="#")
 head(orthologs)
 cre_ortho = orthologs[, 1]
 clat_ortho = orthologs[ ,2]
@@ -23,30 +60,30 @@ cumulative_ortho = orthologs[,3]
 
 nrow(orthologs)
 
-###H1
-##DATA PREP
-H1_ase= read.table("H1_ase_counts.txt", sep="\t", head=T, row.name=1, comment.char = "#")
-H1_ase = H1_ase[cumulative_ortho, ]
-names(H1_ase)
-
-H2_ase = read.table("H2_ase_counts.txt", sep="\t", head=T, row.name=1, comment.char = "#")
-H2_ase = H2_ase[cumulative_ortho, ]
-
-nrow(H2_ase)
-names(H2_ase)
 
 #C.remanei
-cre_counts = read.table("C.remanei_cumulative.txt", sep="\t", head=T, row.name=1, comment.char = "#")
+cre_counts = read.table("2.C.remanei_cumulative.txt", sep="\t", head=T, row.name=1, comment.char = "#")
 cre_counts_ortho = cre_counts[cre_ortho, ]
 rownames(cre_counts_ortho) = cumulative_ortho #changing row names
 nrow(cre_counts_ortho)
 
 #C.latens
-clat_counts = read.table("C.latens_cumulative.txt", sep="\t", head=T, row.name=1, comment.char = "#")
+clat_counts = read.table("3.C.latens_cumulative.txt", sep="\t", head=T, row.name=1, comment.char = "#")
 clat_counts_ortho = clat_counts[clat_ortho, ]
 rownames(clat_counts_ortho) = cumulative_ortho
 nrow(clat_counts_ortho)
 
+###H1
+##DATA PREP
+H1_ase= read.table("5.H1_ase_counts.txt", sep="\t", head=T, row.name=1, comment.char = "#")
+H1_ase = H1_ase[cumulative_ortho, ]
+names(H1_ase)
+
+H2_ase = read.table("6.H2_ase_counts.txt", sep="\t", head=T, row.name=1, comment.char = "#")
+H2_ase = H2_ase[cumulative_ortho, ]
+
+nrow(H2_ase)
+names(H2_ase)
 
 #Combining all data
 
@@ -219,7 +256,6 @@ table(dds.wm.cre.clat.res$wm.cre.clat)
 ###########################################
 
 Hybrid_allele_counts = cbind(H1_ase[,seq(1,24,2)], H1_ase[,seq(2,24,2)], H2_ase[,seq(1,30,2)], H2_ase[,seq(2,30,2)])
-
 colnames(Hybrid_allele_counts)
 colnames(Hybrid_allele_counts) = gsub("X", "", colnames(Hybrid_allele_counts)) ##replacing the last
 
@@ -246,8 +282,10 @@ batch = c(rep(c(1, 2 , 3), 18))
 coldata_h = data.frame(sample_name, species, Hybrid, sex, tissue, batch)
 coldata_h
 
-
+##########################################
 ########Function for getting Trans effects
+##########################################
+
 getTransEffects = function(x){
   x = as.data.frame(x)
   x$T = rep(c("P","H"), each=6)
@@ -258,7 +296,9 @@ getTransEffects = function(x){
   list(x, fit, fit2, p.value)
 }
 
+############################################################
 ##Function to classify allele specific expression categories
+############################################################
 # classify allele specific expression
 # x = "parents hybrids_ASE trans_effects"
 get_regulation_type = function(x){
@@ -275,26 +315,41 @@ get_regulation_type = function(x){
 
 
 
-#FG
+# FG (Female Gonad) - H1 ASE ANALYSIS
+
+# Subset samples: keep only H1 hybrid samples from gonad tissue
 keep = Hybrid == "H1" & tissue == "G"
+
+# Create DESeq2 dataset for allele-specific counts (hybrid only)
 dds_h1.fg = DESeqDataSetFromMatrix(countData = Hybrid_allele_counts[,keep], colData = coldata_h[keep,], design = ~ batch + species)
+# Run differential expression (allelic imbalance test)
 dds_h1.fg = DESeq(dds_h1.fg)
+# Extract results with FDR cutoff = 0.05
 dds.h1.fg = results(dds_h1.fg, alpha = 0.05) ##setting FDR cutoff to 0.05
+
+# Add classification column:
+# 0 = not significant, 1 = biased toward one allele, -1 = biased toward other allele
 dds.h1.fg.res = cbind(as.data.frame(dds.h1.fg),as.data.frame(dds.h1.fg) %>%
                             mutate(h1.fg = ifelse(padj > 0.05, 0, ifelse(log2FoldChange > 0, 1, -1))) %>%
                             dplyr::select(h1.fg)) #added another column where if padj > 0.05, value is 0, if not look at log2foldchange, if log2fold > 0 then 1 else -1
 #View(dds.h1.fg.res)
+# OUTPUT: ASE DESeq2 results + direction of allelic bias
 
 
-##Combining parental and H1 cpm data
-##cbindX in gdata to combine dataframes with different number of rows
+# COMBINE PARENTAL + HYBRID EXPRESSION (CPM)###########################################
+
+# Combine CPM-normalized counts from parental and hybrid datasets
+# cbindX allows combining matrices with different gene sets
+
 df.cpm.fg.h1 = cbindX(cpm(counts(dds_fg.cre.clat), log=T), cpm(counts(dds_h1.fg), log=T)) #these are objects before the result object from Differential gene expression analysis Rscript
-df.cpm.fg.h1 = na.omit(df.cpm.fg.h1)
+df.cpm.fg.h1 = na.omit(df.cpm.fg.h1) # Remove genes with missing values
 
+# CALCULATE TRANS EFFECTS
 trans_effect_fg.h1 = lapply(split(df.cpm.fg.h1, 1:dim(df.cpm.fg.h1)[1]), getTransEffects) #each gene/row is as an element of the list, lapply says to pply this funciton to each element/gene/row
+# Extract p-values and apply FDR correction
 trans_p.values.fdr.fg.h1 = p.adjust(sapply(trans_effect_fg.h1, function(x) x[[4]] ), method="BH")
 
-###creating a new vector with NAs for all the genes
+# Create vector aligned to all genes (fill missing with NA)
 tmp = rep(NA, dim(df.cpm.fg.h1)[1])
 #changing the column names to genes names in the count file
 names(tmp) = rownames(df.cpm.fg.h1)
@@ -304,17 +359,19 @@ names(trans_p.values.fdr.fg.h1) = rownames(df.cpm.fg.h1)
 tmp[ names(trans_p.values.fdr.fg.h1) ] = trans_p.values.fdr.fg.h1
 ###retain the filtered file as the same fdr variable
 trans_p.values.fdr.fg.h1 = tmp
+# OUTPUT: vector of trans-effect FDR p-values per gene
 
 
-
+# ALIGN GENE ORDER ACROSS DATASETS
 genes=sort(rownames(dds.fg.cre.clat))
 
 dds.fg.cre.clat.res = dds.fg.cre.clat.res[genes,]
 dds.h1.fg.res = dds.h1.fg.res[genes, ] ###this makes the order of gene names same in both files
 rownames(dds.h1.fg.res) = genes
 trans_p.values.fdr.fg.h1 = trans_p.values.fdr.fg.h1[genes] ##this also makes the gene order same
-names(trans_p.values.fdr.fg.h1)= genes
+names(trans_p.values.fdr.fg.h1)= genes # Ensures all datasets have identical gene ordering
 
+# BUILD FINAL ASE DATAFRAME
 fg_h1_ase = data.frame(logFC.sp=dds.fg.cre.clat.res$log2FoldChange,
                        logFC.ase=dds.h1.fg.res$log2FoldChange,
                        DE=c("sig","no sig","sig")[ factor(dds.h1.fg.res$h1.fg) ],
@@ -325,51 +382,68 @@ fg_h1_ase = data.frame(logFC.sp=dds.fg.cre.clat.res$log2FoldChange,
                        genes=rownames(dds.fg.cre.clat.res),
                        trans_effect=trans_p.values.fdr.fg.h1, stringsAsFactors=F)
 
-View(fg_h1_ase)
-head(dds.fg.cre.clat)
+# OUTPUT: ASE dataframe with cis/trans info inputs
 
+# CLASSIFY REGULATORY TYPES
+
+# Define possible regulatory categories
 type.levels = c("conserved","ambiguous","trans-only","cis-only", "cis + trans (enhancing)", "cis x trans (compensatory)", "cis-trans (compensatory)")
 
+# Assign regulatory category per gene
 fg_h1_ase$type = get_regulation_type(fg_h1_ase)
 
-fg_h1_table = table(fg_h1_ase$type) ##summary table of # of genes in each category
+#######################
+# Summary table: number of genes per regulatory category
+fg_h1_table = table(fg_h1_ase$type) 
+#######################
 
-##Filtering genes to be on differnt chromosmes and Labelling autosomes vs X-linked genes
+# =========================
+# ADD CHROMOSOME INFORMATION
+# =========================
 
+# Load ortholog + chromosome annotation
 orthologs_chr = read.table(file = "orthologs_chr.txt", sep = "\t", header = TRUE)
 orthologs_chr = orthologs_chr[order(orthologs_chr$C..remanei.Gene.name_C.latens.Gene.name), ]
-
 fg_h1_ase_chr = rownames_to_column(fg_h1_ase)
 rownames(fg_h1_ase_chr) = fg_h1_ase_chr$rowname
 
+# Merge ASE data with chromosome info
 fg_h1_ase_chr = na.omit(cbind(fg_h1_ase_chr[orthologs_chr$C..remanei.Gene.name_C.latens.Gene.name, ], orthologs_chr$C..remanei.Gene.name_C.latens.Gene.name,
                               orthologs_chr$chromosome))
-
+# Label autosomes vs X chromosome
 fg_h1_ase_chr$A_X = "Autosomes"
-
 fg_h1_ase_chr[(fg_h1_ase_chr$`orthologs_chr$chromosome` == "X"), "A_X"] = "X"
 
-##separating information for autosomes and x-chromosome
+# SPLIT AUTOSOMES VS X
 fg_h1_ase_autosome = fg_h1_ase_chr %>% filter(fg_h1_ase_chr$A_X == "Autosomes")
 fg_h1_ase_X = fg_h1_ase_chr %>% filter(fg_h1_ase_chr$A_X == "X")
 
 #write.csv(fg_h1_ase_chr, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/fg_h1_ase_chr.csv")
 
-
+# SUMMARY TABLES BY CHROMOSOME
 fg_h1_ase_chr_count = as.data.frame(table(fg_h1_ase_chr$type, fg_h1_ase_chr$`orthologs_chr$chromosome`)) %>%
   rename(Inheritance = Var1, Chromosome = Var2, Number = Freq)
 
+# Add metadata
 fg_h1_ase_chr_count$Sample = "h1"
 fg_h1_ase_chr_count$Tissue = "G"
 fg_h1_ase_chr_count$Sex = "Female"
 fg_h1_ase_chr_count$Name = paste(fg_h1_ase_chr_count$Sample, fg_h1_ase_chr_count$Sex, fg_h1_ase_chr_count$Tissue, fg_h1_ase_chr_count$Chromosome)
 
-#autosomes vs X
+# Aggregate counts for autosomes vs X
 fg_h1_a_x = fg_h1_ase_chr %>% group_by(A_X, type) %>% dplyr::count()
+
+# =========================
+# FINAL OUTPUTS
+# =========================
+# fg_h1_ase              → main ASE + regulatory dataset
+# fg_h1_table            → counts per regulatory category
+# fg_h1_ase_chr_count    → counts by chromosome
+# fg_h1_a_x              → autosome vs X summary
 
 ##########################################################################################
 
-#H2
+# FG (Female Gonad) - H2 ASE ANALYSIS
 keep = Hybrid == "H2" & tissue == "G" & sex == "F"
 dds_h2.fg = DESeqDataSetFromMatrix(countData = Hybrid_allele_counts[,keep], colData = coldata_h[keep,], design = ~ batch + species)
 dds_h2.fg = DESeq(dds_h2.fg)
@@ -378,21 +452,28 @@ dds.h2.fg.res = cbind(as.data.frame(dds.h2.fg),as.data.frame(dds.h2.fg) %>%
                         mutate(h2.fg = ifelse(padj > 0.05, 0, ifelse(log2FoldChange > 0, 1, -1))) %>%
                         dplyr::select(h2.fg)) #added another column where if padj > 0.05, value is 0, if not look at log2foldchange, if log2fold > 0 then 1 else -1
 
+# OUTPUT: ASE DESeq2 results + direction of allelic bias
 
-##Combining parental and H2 cpm data
+
+# COMBINE PARENTAL + HYBRID EXPRESSION (CPM)
 ##cbindX in gdata to combine dataframes with different number of rows
 df.cpm.fg.h2 = cbindX(cpm(counts(dds_fg.cre.clat), log=T), cpm(counts(dds_h2.fg), log=T)) #these are objects before the result object
 df.cpm.fg.h2 = na.omit(df.cpm.fg.h2)
 
+# CALCULATE TRANS EFFECTS
 trans_effect_fg.h2 = lapply(split(df.cpm.fg.h2, 1:dim(df.cpm.fg.h2)[1]), getTransEffects)
 trans_p.values.fdr.fg.h2 = p.adjust(sapply(trans_effect_fg.h2, function(x) x[[4]] ), method="BH")
 
+# Create vector aligned to all genes (fill missing with NA)
 tmp = rep(NA, dim(df.cpm.fg.h2)[1])
 names(tmp) = rownames(df.cpm.fg.h2)
+# Assign corrected p-values to corresponding genes
 names(trans_p.values.fdr.fg.h2) = rownames(df.cpm.fg.h2)
 tmp[ names(trans_p.values.fdr.fg.h2) ] = trans_p.values.fdr.fg.h2
 trans_p.values.fdr.fg.h2 = tmp
+# OUTPUT: vector of trans-effect FDR p-values per gene
 
+# ALIGN GENE ORDER ACROSS DATASETS
 genes=sort(rownames(dds.fg.cre.clat))
 dds.fg.cre.clat.res = dds.fg.cre.clat.res[genes,]
 dds.h2.fg.res = dds.h2.fg.res[genes, ]
@@ -400,6 +481,7 @@ rownames(dds.h2.fg.res) = genes
 trans_p.values.fdr.fg.h2 = trans_p.values.fdr.fg.h2[genes]
 names(trans_p.values.fdr.fg.h2)= genes
 
+# BUILD FINAL ASE DATAFRAME
 fg_h2_ase = data.frame(logFC.sp=dds.fg.cre.clat.res$log2FoldChange,
                        logFC.ase=dds.h2.fg.res$log2FoldChange,
                        DE=c("sig","no sig","sig")[ factor(dds.h2.fg.res$h2.fg) ],
@@ -410,24 +492,28 @@ fg_h2_ase = data.frame(logFC.sp=dds.fg.cre.clat.res$log2FoldChange,
                        genes=rownames(dds.fg.cre.clat.res),
                        trans_effect=trans_p.values.fdr.fg.h2, stringsAsFactors=F)
 
-# classify allele specific expression
+# OUTPUT: master ASE dataframe with cis/trans info inputs
+
+# CLASSIFY REGULATORY TYPES
 type.levels = c("conserved","ambiguous","trans-only","cis-only", "cis + trans (enhancing)", "cis x trans (compensatory)", "cis-trans (compensatory)")
 
 fg_h2_ase$type = get_regulation_type(fg_h2_ase)
 
+###################
+# Summary table: number of genes per regulatory category
 fg_h2_table = table(fg_h2_ase$type) ##summary table of # of genes in each category
+###################
 
-
-#####Filtering and labelling chromosomes
+# ADD CHROMOSOME INFORMATION
 
 fg_h2_ase_chr = rownames_to_column(fg_h2_ase)
 rownames(fg_h2_ase_chr) = fg_h2_ase_chr$rowname
 
+# Merge ASE data with chromosome info
 fg_h2_ase_chr = na.omit(cbind(fg_h2_ase_chr[orthologs_chr$C..remanei.Gene.name_C.latens.Gene.name, ], orthologs_chr$C..remanei.Gene.name_C.latens.Gene.name,
                               orthologs_chr$chromosome))
-
+# SPLIT AUTOSOMES VS X
 fg_h2_ase_chr$A_X = "Autosomes"
-
 fg_h2_ase_chr[(fg_h2_ase_chr$`orthologs_chr$chromosome` == "X"), "A_X"] = "X"
 
 ##separating information for autosomes and x-chromosome
@@ -436,22 +522,23 @@ fg_h2_ase_X = fg_h2_ase_chr %>% filter(fg_h2_ase_chr$A_X == "X")
 
 #write.csv(fg_h2_ase_chr, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/fg_h2_ase_chr.csv")
 
-
+# SUMMARY TABLES BY CHROMOSOME
 fg_h2_ase_chr_count = as.data.frame(table(fg_h2_ase_chr$type, fg_h2_ase_chr$`orthologs_chr$chromosome`)) %>%
   rename(Inheritance = Var1, Chromosome = Var2, Number = Freq)
 
+# Add metadata
 fg_h2_ase_chr_count$Sample = "h2"
 fg_h2_ase_chr_count$Tissue = "G"
 fg_h2_ase_chr_count$Sex = "Female"
 fg_h2_ase_chr_count$Name = paste(fg_h2_ase_chr_count$Sample, fg_h2_ase_chr_count$Sex, fg_h2_ase_chr_count$Tissue, fg_h2_ase_chr_count$Chromosome)
 
-#autosomes vs X
+# Aggregate counts for autosomes vs X
 fg_h2_a_x = fg_h2_ase_chr %>% group_by(A_X, type) %>% dplyr::count()
 
 
 ################################################################
 
-###FS
+# FS (Female Soma) - H1 ASE ANALYSIS
 
 #H1
 keep = Hybrid == "H1" & tissue == "S" & sex == "F"
@@ -462,12 +549,15 @@ dds.h1.fs.res = cbind(as.data.frame(dds.h1.fs),as.data.frame(dds.h1.fs) %>%
                         mutate(h1.fs = ifelse(padj > 0.05, 0, ifelse(log2FoldChange > 0, 1, -1))) %>%
                         dplyr::select(h1.fs)) #added another column where if padj > 0.05, value is 0, if not look at log2foldchange, if log2fold > 0 then 1 else -1
 
+# OUTPUT: ASE DESeq2 results + direction of allelic bias
 
-##Combining parental and H1 cpm data
+
+# COMBINE PARENTAL + HYBRID EXPRESSION (CPM)
 ##cbindX in gdata to combine dataframes with different number of rows
 df.cpm.fs.h1 = cbindX(cpm(counts(dds_fs.cre.clat), log=T), cpm(counts(dds_h1.fs), log=T)) #these are objects before the result object
 df.cpm.fs.h1 = na.omit(df.cpm.fs.h1)
 
+# CALCULATE TRANS EFFECTS
 trans_effect_fs.h1 = lapply(split(df.cpm.fs.h1, 1:dim(df.cpm.fs.h1)[1]), getTransEffects)
 trans_p.values.fdr.fs.h1 = p.adjust(sapply(trans_effect_fs.h1, function(x) x[[4]] ), method="BH")
 
@@ -476,7 +566,10 @@ names(tmp) = rownames(df.cpm.fs.h1)
 names(trans_p.values.fdr.fs.h1) = rownames(df.cpm.fs.h1)
 tmp[ names(trans_p.values.fdr.fs.h1) ] = trans_p.values.fdr.fs.h1
 trans_p.values.fdr.fs.h1 = tmp
+# OUTPUT: vector of trans-effect FDR p-values per gene
 
+
+# ALIGN GENE ORDER ACROSS DATASETS
 genes=sort(rownames(dds.fs.cre.clat))
 dds.fs.cre.clat.res = dds.fs.cre.clat.res[genes,]
 dds.h1.fs.res = dds.h1.fs.res[genes, ]
@@ -484,6 +577,7 @@ rownames(dds.h1.fs.res) = genes
 trans_p.values.fdr.fs.h1 = trans_p.values.fdr.fs.h1[genes]
 names(trans_p.values.fdr.fs.h1)= genes
 
+# BUILD FINAL ASE DATAFRAME
 fs_h1_ase = data.frame(logFC.sp=dds.fs.cre.clat.res$log2FoldChange,
                        logFC.ase=dds.h1.fs.res$log2FoldChange,
                        DE=c("sig","no sig","sig")[ factor(dds.h1.fs.res$h1.fs) ],
@@ -493,19 +587,27 @@ fs_h1_ase = data.frame(logFC.sp=dds.fs.cre.clat.res$log2FoldChange,
                        p.value.ase=dds.h1.fs.res$padj,
                        genes=rownames(dds.fs.cre.clat.res),
                        trans_effect=trans_p.values.fdr.fs.h1, stringsAsFactors=F)
+
+# OUTPUT: master ASE dataframe with cis/trans info inputs
+
+# CLASSIFY REGULATORY TYPES
 #Regulatory divergence
 type.levels = c("conserved","ambiguous","trans-only","cis-only", "cis + trans (enhancing)", "cis x trans (compensatory)", "cis-trans (compensatory)")
 
 fs_h1_ase$type = get_regulation_type(fs_h1_ase)
 
+#######################################
+# Summary table: number of genes per regulatory category
 fs_h1_table = table(fs_h1_ase$type) ##summary table of # of genes in each category
+#######################################
+# OUTPUT: counts of genes in each regulatory divergence class
 
-
-#####Filtering and labelling chromosomal information
+# ADD CHROMOSOME INFORMATION
 
 fs_h1_ase_chr = rownames_to_column(fs_h1_ase)
 rownames(fs_h1_ase_chr) = fs_h1_ase_chr$rowname
 
+# Merge ASE data with chromosome info
 fs_h1_ase_chr = na.omit(cbind(fs_h1_ase_chr[orthologs_chr$C..remanei.Gene.name_C.latens.Gene.name, ], orthologs_chr$C..remanei.Gene.name_C.latens.Gene.name,
                               orthologs_chr$chromosome))
 
@@ -519,7 +621,7 @@ fs_h1_ase_X = fs_h1_ase_chr %>% filter(fs_h1_ase_chr$A_X == "X")
 
 #write.csv(fs_h1_ase_chr, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/fs_h1_ase_chr.csv")
 
-
+# SUMMARY TABLES BY CHROMOSOME
 fs_h1_ase_chr_count = as.data.frame(table(fs_h1_ase_chr$type, fs_h1_ase_chr$`orthologs_chr$chromosome`)) %>%
   rename(Inheritance = Var1, Chromosome = Var2, Number = Freq)
 
@@ -528,12 +630,12 @@ fs_h1_ase_chr_count$Tissue = "S"
 fs_h1_ase_chr_count$Sex = "Female"
 fs_h1_ase_chr_count$Name = paste(fs_h1_ase_chr_count$Sample, fs_h1_ase_chr_count$Sex, fs_h1_ase_chr_count$Tissue, fs_h1_ase_chr_count$Chromosome)
 
-#autosomes vs X
+# Aggregate counts for autosomes vs X
 fs_h1_a_x = fs_h1_ase_chr %>% group_by(A_X, type) %>% dplyr::count()
 
 ###################################################################
-##FS
-#H2
+##FS (Female Soma) H2 analysis
+
 keep = Hybrid == "H2" & tissue == "S" & sex == "F"
 dds_h2.fs = DESeqDataSetFromMatrix(countData = Hybrid_allele_counts[,keep], colData = coldata_h[keep,], design = ~ batch + species)
 dds_h2.fs = DESeq(dds_h2.fs)
@@ -542,8 +644,9 @@ dds.h2.fs.res = cbind(as.data.frame(dds.h2.fs),as.data.frame(dds.h2.fs) %>%
                         mutate(h2.fs = ifelse(padj > 0.05, 0, ifelse(log2FoldChange > 0, 1, -1))) %>%
                         dplyr::select(h2.fs)) #added another column where if padj > 0.05, value is 0, if not look at log2foldchange, if log2fold > 0 then 1 else -1
 
+# OUTPUT: ASE DESeq2 results + direction of allelic bias
 
-##Combining parental and H2 cpm data
+# COMBINE PARENTAL + HYBRID EXPRESSION (CPM)
 ##cbindX in gdata to combine dataframes with different number of rows
 df.cpm.fs.h2 = cbindX(cpm(counts(dds_fs.cre.clat), log=T), cpm(counts(dds_h2.fs), log=T)) #these are objects before the result object
 df.cpm.fs.h2 = na.omit(df.cpm.fs.h2)
@@ -556,6 +659,7 @@ names(tmp) = rownames(df.cpm.fs.h2)
 names(trans_p.values.fdr.fs.h2) = rownames(df.cpm.fs.h2)
 tmp[ names(trans_p.values.fdr.fs.h2) ] = trans_p.values.fdr.fs.h2
 trans_p.values.fdr.fs.h2 = tmp
+# OUTPUT: vector of trans-effect FDR p-values per gene
 
 genes=sort(rownames(dds.fs.cre.clat))
 dds.fs.cre.clat.res = dds.fs.cre.clat.res[genes,]
@@ -564,6 +668,7 @@ rownames(dds.h2.fs.res) = genes
 trans_p.values.fdr.fs.h2 = trans_p.values.fdr.fs.h2[genes]
 names(trans_p.values.fdr.fs.h2)= genes
 
+# BUILD FINAL ASE DATAFRAME
 fs_h2_ase = data.frame(logFC.sp=dds.fs.cre.clat.res$log2FoldChange,
                        logFC.ase=dds.h2.fs.res$log2FoldChange,
                        DE=c("sig","no sig","sig")[ factor(dds.h2.fs.res$h2.fs) ],
@@ -573,17 +678,19 @@ fs_h2_ase = data.frame(logFC.sp=dds.fs.cre.clat.res$log2FoldChange,
                        p.value.ase=dds.h2.fs.res$padj,
                        genes=rownames(dds.fs.cre.clat.res),
                        trans_effect=trans_p.values.fdr.fs.h2, stringsAsFactors=F)
+# OUTPUT: master ASE dataframe with cis/trans info inputs
 
-# classify allele specific expression
+
+# CLASSIFY REGULATORY TYPES
 
 type.levels = c("conserved","ambiguous","trans-only","cis-only", "cis + trans (enhancing)", "cis x trans (compensatory)", "cis-trans (compensatory)")
 
 fs_h2_ase$type = get_regulation_type(fs_h2_ase)
 
 fs_h2_table = table(fs_h2_ase$type) ##summary table of # of genes in each category
+# OUTPUT: counts of genes in each regulatory divergence class
 
-
-#####Filtering and labelling chromosomal information
+# ADD CHROMOSOME INFORMATION
 
 fs_h2_ase_chr = rownames_to_column(fs_h2_ase)
 rownames(fs_h2_ase_chr) = fs_h2_ase_chr$rowname
@@ -592,16 +699,16 @@ fs_h2_ase_chr = na.omit(cbind(fs_h2_ase_chr[orthologs_chr$C..remanei.Gene.name_C
                               orthologs_chr$chromosome))
 
 fs_h2_ase_chr$A_X = "Autosomes"
-
+# Label autosomes vs X chromosome
 fs_h2_ase_chr[(fs_h2_ase_chr$`orthologs_chr$chromosome` == "X"), "A_X"] = "X"
 
-##separating information for autosomes and x-chromosome
+# SPLIT AUTOSOMES VS X
 fs_h2_ase_autosome = fs_h2_ase_chr %>% filter(fs_h2_ase_chr$A_X == "Autosomes")
 fs_h2_ase_X = fs_h2_ase_chr %>% filter(fs_h2_ase_chr$A_X == "X")
 
 #write.csv(fs_h2_ase_chr, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/fs_h2_ase_chr.csv")
 
-
+# SUMMARY TABLES BY CHROMOSOME
 fs_h2_ase_chr_count = as.data.frame(table(fs_h2_ase_chr$type, fs_h2_ase_chr$`orthologs_chr$chromosome`)) %>%
   rename(Inheritance = Var1, Chromosome = Var2, Number = Freq)
 
@@ -610,38 +717,47 @@ fs_h2_ase_chr_count$Tissue = "S"
 fs_h2_ase_chr_count$Sex = "Female"
 fs_h2_ase_chr_count$Name = paste(fs_h2_ase_chr_count$Sample, fs_h2_ase_chr_count$Sex, fs_h2_ase_chr_count$Tissue, fs_h2_ase_chr_count$Chromosome)
 
-#autosomes vs X
+# Aggregate counts for autosomes vs X
 fs_h2_a_x = fs_h2_ase_chr %>% group_by(A_X, type) %>% dplyr::count()
 
-###################################################3###################################################3
-###MS###################################################3###################################################3
-###################################################3###################################################3
+# =========================
+# MS (Male Somatic) - H1 ASE ANALYSIS
+# =========================
 
 #H1
-
+# Subset samples: keep only H1 hybrid, somatic tissue, male samples
 keep = Hybrid == "H1" & tissue == "S" & sex == "M"
+# Create DESeq2 dataset for allele-specific counts
 dds_h1.ms = DESeqDataSetFromMatrix(countData = Hybrid_allele_counts[,keep], colData = coldata_h[keep,], design = ~ batch + species)
+# Run DESeq2 (test for allelic imbalance)
 dds_h1.ms = DESeq(dds_h1.ms)
+# Extract results with FDR cutoff = 0.05
 dds.h1.ms = results(dds_h1.ms, alpha = 0.05) ##setting FDR cutoff to 0.05
+# Add direction classification:
+# 0 = not significant, 1 = bias toward one allele, -1 = bias toward other allele
 dds.h1.ms.res = cbind(as.data.frame(dds.h1.ms),as.data.frame(dds.h1.ms) %>%
                         mutate(h1.ms = ifelse(padj > 0.05, 0, ifelse(log2FoldChange > 0, 1, -1))) %>%
                         dplyr::select(h1.ms)) #added another column where if padj > 0.05, value is 0, if not look at log2foldchange, if log2fold > 0 then 1 else -1
+# OUTPUT: ASE DESeq2 results + allelic direction
 
-
-##Combining parental and H1 cpm data
+# COMBINE PARENTAL + HYBRID CPM DATA
 ##cbindX in gdata to combine dataframes with different number of rows
 df.cpm.ms.h1 = cbindX(cpm(counts(dds_ms.cre.clat), log=T), cpm(counts(dds_h1.ms), log=T)) #these are objects before the result object
 df.cpm.ms.h1 = na.omit(df.cpm.ms.h1)
 
+# CALCULATE TRANS EFFECTS
 trans_effect_ms.h1 = lapply(split(df.cpm.ms.h1, 1:dim(df.cpm.ms.h1)[1]), getTransEffects)
 trans_p.values.fdr.ms.h1 = p.adjust(sapply(trans_effect_ms.h1, function(x) x[[4]] ), method="BH")
 
+# Align p-values to all genes (fill missing with NA)
 tmp = rep(NA, dim(df.cpm.ms.h1)[1])
 names(tmp) = rownames(df.cpm.ms.h1)
 names(trans_p.values.fdr.ms.h1) = rownames(df.cpm.ms.h1)
 tmp[ names(trans_p.values.fdr.ms.h1) ] = trans_p.values.fdr.ms.h1
 trans_p.values.fdr.ms.h1 = tmp
+# OUTPUT: trans-effect FDR p-values per gene
 
+# ALIGN GENE ORDER
 genes=sort(rownames(dds.ms.cre.clat))
 dds.ms.cre.clat.res = dds.ms.cre.clat.res[genes,]
 dds.h1.ms.res = dds.h1.ms.res[genes, ]
@@ -649,6 +765,7 @@ rownames(dds.h1.ms.res) = genes
 trans_p.values.fdr.ms.h1 = trans_p.values.fdr.ms.h1[genes]
 names(trans_p.values.fdr.ms.h1)= genes
 
+# BUILD ASE DATAFRAME
 ms_h1_ase = data.frame(logFC.sp=dds.ms.cre.clat.res$log2FoldChange,
                        logFC.ase=dds.h1.ms.res$log2FoldChange,
                        DE=c("sig","no sig","sig")[ factor(dds.h1.ms.res$h1.ms) ],
@@ -659,43 +776,68 @@ ms_h1_ase = data.frame(logFC.sp=dds.ms.cre.clat.res$log2FoldChange,
                        genes=rownames(dds.ms.cre.clat.res),
                        trans_effect=trans_p.values.fdr.ms.h1, stringsAsFactors=F)
 
-# classify allele specific expression
+# OUTPUT: master ASE + trans-effect dataset
 
-ms_h1_ase$type = get_regulation_type(ms_h1_ase) #contains both auto and X-linked (inccrrect X-linked classification)
+# CLASSIFY REGULATORY DIVERGENCE
 
-#####Filtering and labelling chromosomal information
+ms_h1_ase$type = get_regulation_type(ms_h1_ase) 
+# NOTE: includes both autosomal and X-linked genes (X needs special handling)
+
+# ADD CHROMOSOME INFORMATION
 
 ms_h1_ase_chr = rownames_to_column(ms_h1_ase)
 rownames(ms_h1_ase_chr) = ms_h1_ase_chr$rowname
 
 ms_h1_ase_chr = na.omit(cbind(ms_h1_ase_chr[orthologs_chr$C..remanei.Gene.name_C.latens.Gene.name, ], orthologs_chr$C..remanei.Gene.name_C.latens.Gene.name,
                               orthologs_chr$chromosome))
-
+# Label autosomes vs X chromosome
 ms_h1_ase_chr$A_X = "Autosomes"
-
 ms_h1_ase_chr[(ms_h1_ase_chr$`orthologs_chr$chromosome` == "X"), "A_X"] = "X" #identifying X-linked genes to remove them 
+
+# Subset autosomal genes only
 ms_h1_ase_autosome = ms_h1_ase_chr %>% filter(ms_h1_ase_chr$A_X == "Autosomes")
+# Count number of autosomal genes
 nrow(ms_h1_ase_autosome) #10814 detectable on autosomes out of 11088 overall on autosomes
 
+##################
+# Summary of regulatory categories (autosomes only)
 table(ms_h1_ase_autosome$type)
 #write.csv(ms_h1_ase_autosome, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/ms_h1_ase_autosome.csv")
 
-#######Change regulatory divergence for X-linked genes
-##H1 have C.remanei X-chromosomes
+# =========================
+# X-LINKED REGULATORY DIVERGENCE (SPECIAL HANDLING)
+# =========================
 
 ###Pre classified variable from Classifying Inheritance.R file
 ###This variable has regulatory divergence for X-linked genes 
 
+# Extract X-linked genes only
 dds.ms.h1_X = na.omit(dds.ms.h1[ortho_X$C..remanei.Gene.name_C.latens.Gene.name, ])
+
+# Apply X-specific regulatory classification
+# (H1 males inherit X from C. remanei)
 dds.ms.h1_X$reg.div = Cre_X_regulatory_divergence(dds.ms.h1_X) #has data only for X-linked genes
+
+# Keep only classification column and gene names
 dds.ms.h1_X = dds.ms.h1_X %>% select("reg.div") %>% rownames_to_column() 
+
+# Add chromosome label
 dds.ms.h1_X$chr_info = "X"
 head(dds.ms.h1_X)
 table(dds.ms.h1_X$reg.div)
+# Number of detectable X-linked genes
 nrow(dds.ms.h1_X) #2624 detectable out of possible 2665 X-linked genes
 
 #write.csv(dds.ms.h1_X, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/ms_h1_ase_X_linked.csv")
 
+#Comining autosomal and X-linked classification to get overall gene counts
+ms_h1_table = table(c(ms_h1_ase_autosome$type, dds.ms.h1_X$reg.div))
+
+
+
+# OUTPUT:
+# ms_h1_ase_autosome → autosomal ASE + regulation
+# dds.ms.h1_X        → X-linked regulatory divergence (custom classification)
 #################################################################################
 #H2
 ##MS
@@ -744,7 +886,10 @@ ms_h2_ase = data.frame(logFC.sp=dds.ms.cre.clat.res$log2FoldChange,
 
 ms_h2_ase$type = get_regulation_type(ms_h2_ase)
 
+#################################################################
 #######Change regulatory divergence for X-linked genes
+#################################################################
+
 ##H2 have C.latens X-chromosomes
 #####Filtering and labelling chromosomal information
 
@@ -775,8 +920,9 @@ head(dds.ms.h2_X)
 
 nrow(dds.ms.h2_X) #2624 detectable out of possible 2665 X-linked genes
 
-write.csv(dds.ms.h2_X, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/ms_h2_ase_X_linked.csv")
-
+#write.csv(dds.ms.h2_X, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/ms_h2_ase_X_linked.csv")
+#Comining autosomal and X-linked classification to get overall gene counts
+ms_h2_table = table(c(ms_h2_ase_autosome$type, dds.ms.h2_X$reg.div))
 
 
 ###################################################################################################
@@ -844,10 +990,12 @@ wm_h1_ase_autosome = wm_h1_ase_chr %>% filter(wm_h1_ase_chr$A_X == "Autosomes")
 nrow(wm_h1_ase_autosome) #10824 detectable on autosomes out of 11088 overall on autosomes
 
 table(wm_h1_ase_autosome$type)
-write.csv(wm_h1_ase_autosome, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/wm_h1_ase_autosome.csv")
+#write.csv(wm_h1_ase_autosome, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/wm_h1_ase_autosome.csv")
 
+####################################################
 #######Change regulatory divergence for X-linked genes
 ##H1 have C.remanei X-chromosomes
+
 
 ###Pre classified variable from Classifying Inheritance.R file
 ###This variable has regulatory divergence for X-linked genes 
@@ -863,8 +1011,10 @@ head(dds.wm.h1_X)
 
 nrow(dds.wm.h1_X) #2626 detectable out of possible 2665 X-linked genes
 
-write.csv(dds.wm.h1_X, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/wm_h1_ase_X_linked.csv")
+#write.csv(dds.wm.h1_X, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/wm_h1_ase_X_linked.csv")
 
+#Comining autosomal and X-linked classification to get overall gene counts
+wm_h1_table = table(c(wm_h1_ase_autosome$type, dds.wm.h1_X$reg.div))
 
 ###############################################################################################
 #H2
@@ -928,7 +1078,7 @@ wm_h2_ase_autosome = wm_h2_ase_chr %>% filter(wm_h2_ase_chr$A_X == "Autosomes")
 nrow(wm_h2_ase_autosome) #10824 detectable on autosomes out of 11088 overall on autosomes
 
 table(wm_h2_ase_autosome$type)
-write.csv(wm_h2_ase_autosome, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/wm_h2_ase_autosome.csv")
+#write.csv(wm_h2_ase_autosome, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/wm_h2_ase_autosome.csv")
 
 
 #######Change regulatory divergence for X-linked genes
@@ -949,7 +1099,8 @@ head(dds.wm.h2_X)
 nrow(dds.wm.h2_X) #2626 detectable out of possible 2665 X-linked genes
 
 #write.csv(dds.wm.h2_X, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/wm_h2_ase_X_linked.csv")
-
+#Comining autosomal and X-linked classification to get overall gene counts
+wm_h2_table = table(c(wm_h2_ase_autosome$type, dds.wm.h2_X$reg.div))
 
 ###############################################
 ####MG
@@ -1015,7 +1166,7 @@ mg_h2_ase_autosome = mg_h2_ase_chr %>% filter(mg_h2_ase_chr$A_X == "Autosomes")
 nrow(mg_h2_ase_autosome) #10480 detectable on autosomes out of 11088 overall on autosomes
 
 table(mg_h2_ase_autosome$type)
-write.csv(mg_h2_ase_autosome, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/mg_h2_ase_autosome.csv")
+#write.csv(mg_h2_ase_autosome, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/mg_h2_ase_autosome.csv")
 
 
 #######Change regulatory divergence for X-linked genes
@@ -1035,7 +1186,10 @@ head(dds.mg.h2_X)
 
 nrow(dds.mg.h2_X) #2326 detectable out of possible 2665 X-linked genes
 
-write.csv(dds.mg.h2_X, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/mg_h2_ase_X_linked.csv")
+#write.csv(dds.mg.h2_X, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/mg_h2_ase_X_linked.csv")
+
+#Comining autosomal and X-linked classification to get overall gene counts
+mg_h2_table = table(c(mg_h2_ase_autosome$type, dds.mg.h2_X$reg.div))
 
 
 ##############################################################################################################
@@ -1106,7 +1260,308 @@ mg_h2_table.prop = cbind(as.data.frame(mg_h2_table),as.data.frame(mg_h2_table) %
 regdiv_all_counts = rbind(fg_h1_table.prop, fg_h2_table.prop, fs_h1_table.prop, fs_h2_table.prop,
                           ms_h1_table.prop, ms_h2_table.prop, mg_h2_table.prop, wm_h1_table.prop, wm_h2_table.prop)
 
-#write.csv(regdiv_all_counts, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/RegDiv_all_counts.csv")
+#write.csv(regdiv_all_counts, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/3.RegDiv_all_counts.csv")
+
+############################################################################################################
+##### Getting data for Autosomes and X-chromosome separately
+############################################################################################################
+
+## =========================
+## FG (Female Gonad) - H1
+## =========================
+head(fg_h1_ase_chr)
+
+# Subset autosomal genes
+fg_h1_ase_autosome = fg_h1_ase_chr %>% filter(fg_h1_ase_chr$A_X == "Autosomes") #info for autosome
+# Count regulatory categories for autosomes
+fg_h1_ase_autosome_table = table(fg_h1_ase_autosome$type)
+
+# Subset X-linked genes
+fg_h1_ase_X = fg_h1_ase_chr %>% filter(fg_h1_ase_chr$A_X == "X") #info for x-chrosomosomes
+
+# Collapse regulatory categories into simplified groups for X chromosome
+fg_h1_ase_X$combined_regdiv = "Other"
+fg_h1_ase_X[(fg_h1_ase_X$type == "cis-only"), "combined_regdiv"] = "cis-only"
+fg_h1_ase_X[(fg_h1_ase_X$type == "trans-only"), "combined_regdiv"] = "trans-only"
+fg_h1_ase_X[(fg_h1_ase_X$type == "cis-trans (compensatory)"), "combined_regdiv"] = "cis-trans (compensatory)"
+fg_h1_ase_X[(fg_h1_ase_X$type == "conserved"), "combined_regdiv"] = "conserved"
+
+# Count X-linked regulatory categories
+fg_h1_ase_X_table = table(fg_h1_ase_X$combined_regdiv)
+
+## =========================
+## FG - H2
+## =========================
+head(fg_h2_ase_chr)
+# Split autosomes and X
+fg_h2_ase_autosome = fg_h2_ase_chr %>% filter(fg_h2_ase_chr$A_X == "Autosomes")
+fg_h2_ase_X = fg_h2_ase_chr %>% filter(fg_h2_ase_chr$A_X == "X")
+
+
+# Simplify X-linked categories
+fg_h2_ase_X$combined_regdiv = "Other"
+fg_h2_ase_X[(fg_h2_ase_X$type == "cis-only"), "combined_regdiv"] = "cis-only"
+fg_h2_ase_X[(fg_h2_ase_X$type == "trans-only"), "combined_regdiv"] = "trans-only"
+fg_h2_ase_X[(fg_h2_ase_X$type == "cis-trans (compensatory)"), "combined_regdiv"] = "cis-trans (compensatory)"
+fg_h2_ase_X[(fg_h2_ase_X$type == "conserved"), "combined_regdiv"] = "conserved"
+
+fg_h2_ase_X_table = table(fg_h2_ase_X$combined_regdiv) # X-linked counts
+fg_h2_ase_autosome_table = table(fg_h2_ase_autosome$type) # Autosomal counts
+
+## =========================
+## FS (Female Soma) - H1
+## =========================
+##separating information for autosomes and x-chromosome
+fs_h1_ase_autosome = fs_h1_ase_chr %>% filter(fs_h1_ase_chr$A_X == "Autosomes")
+fs_h1_ase_X = fs_h1_ase_chr %>% filter(fs_h1_ase_chr$A_X == "X")
+
+fs_h1_ase_autosome_table = table(fs_h1_ase_autosome$type) # Autosomal counts
+
+# Simplify X-linked categories
+fs_h1_ase_X$combined_regdiv = "Other"
+fs_h1_ase_X[(fs_h1_ase_X$type == "cis-only"), "combined_regdiv"] = "cis-only"
+fs_h1_ase_X[(fs_h1_ase_X$type == "trans-only"), "combined_regdiv"] = "trans-only"
+fs_h1_ase_X[(fs_h1_ase_X$type == "cis-trans (compensatory)"), "combined_regdiv"] = "cis-trans (compensatory)"
+fs_h1_ase_X[(fs_h1_ase_X$type == "conserved"), "combined_regdiv"] = "conserved"
+
+fs_h1_ase_X_table = table(fs_h1_ase_X$combined_regdiv) # X-linked counts
+
+## =========================
+## FS - H2
+## =========================
+##separating information for autosomes and x-chromosome
+fs_h2_ase_autosome = fs_h2_ase_chr %>% filter(fs_h2_ase_chr$A_X == "Autosomes")
+fs_h2_ase_X = fs_h2_ase_chr %>% filter(fs_h2_ase_chr$A_X == "X")
+nrow(fs_h2_ase_autosome) #10465 genes detected on autosomes
+
+fs_h2_ase_autosome_table = table(fs_h2_ase_autosome$type) # Autosomal counts
+
+# Simplify X-linked categories
+fs_h2_ase_X$combined_regdiv = "Other"
+fs_h2_ase_X[(fs_h2_ase_X$type == "cis-only"), "combined_regdiv"] = "cis-only"
+fs_h2_ase_X[(fs_h2_ase_X$type == "trans-only"), "combined_regdiv"] = "trans-only"
+fs_h2_ase_X[(fs_h2_ase_X$type == "cis-trans (compensatory)"), "combined_regdiv"] = "cis-trans (compensatory)"
+fs_h2_ase_X[(fs_h2_ase_X$type == "conserved"), "combined_regdiv"] = "conserved"
+
+fs_h2_ase_X_table = table(fs_h2_ase_X$combined_regdiv) # X-linked counts
+
+## =========================
+## MS (Male Soma) - H1
+## =========================
+ms_h1_ase_autosome = ms_h1_ase_chr %>% filter(ms_h1_ase_chr$A_X == "Autosomes")
+nrow(ms_h1_ase_autosome) #10814 detectable on autosomes out of 11088 overall on autosomes
+
+
+table(dds.ms.h1_X$reg.div) 
+nrow(dds.ms.h1_X) #2624 detectable out of possible 2665 X-linked genes
+
+ms_h1_ase_autosome_table = table(ms_h1_ase_autosome$type) # Autosomal counts
+
+ms_h1_ase_X_table = table(dds.ms.h1_X$reg.div) # X-linked counts use precomputed regulatory classification
+
+
+## =========================
+## MS - H2
+## =========================
+
+ms_h2_ase_autosome = ms_h2_ase_chr %>% filter(ms_h2_ase_chr$A_X == "Autosomes")
+nrow(ms_h2_ase_autosome) #10814 detectable on autosomes out of 11088 overall on autosomes
+
+table(dds.ms.h2_X$reg.div)
+nrow(dds.ms.h2_X) #2624 detectable out of possible 2665 X-linked genes
+
+ms_h2_ase_autosome_table = table(ms_h2_ase_autosome$type) # Autosomal counts
+ms_h2_ase_X_table = table(dds.ms.h2_X$reg.div) # X-linked counts
+
+## =========================
+## WM (Whole Male) - H1
+## =========================
+wm_h1_ase_autosome = wm_h1_ase_chr %>% filter(wm_h1_ase_chr$A_X == "Autosomes")
+nrow(wm_h1_ase_autosome) #10824 detectable on autosomes out of 11088 overall on autosomes
+
+table(wm_h1_ase_autosome$type)
+
+table(dds.wm.h1_X$reg.div)
+head(dds.wm.h1_X)
+nrow(dds.wm.h1_X) #2626 detectable out of possible 2665 X-linked genes
+
+wm_h1_ase_autosome_table = table(wm_h1_ase_autosome$type) # Autosomal counts
+wm_h1_ase_X_table = table(dds.wm.h1_X$reg.div) # X-linked counts
+
+## =========================
+## WM - H2
+## =========================
+wm_h2_ase_autosome = wm_h2_ase_chr %>% filter(wm_h2_ase_chr$A_X == "Autosomes")
+nrow(wm_h2_ase_autosome) #10824 detectable on autosomes out of 11088 overall on autosomes
+table(wm_h2_ase_autosome$type)
+
+table(dds.wm.h2_X$reg.div)
+nrow(dds.wm.h2_X) #2626 detectable out of possible 2665 X-linked genes
+
+wm_h2_ase_autosome_table = table(wm_h2_ase_autosome$type) # Autosomal counts
+wm_h2_ase_X_table = table(dds.wm.h2_X$reg.div) # X-linked counts
+
+## =========================
+## MG (Male Gonad) - H2
+## =========================
+mg_h2_ase_autosome = mg_h2_ase_chr %>% filter(mg_h2_ase_chr$A_X == "Autosomes")
+nrow(mg_h2_ase_autosome) #10480 detectable on autosomes out of 11088 overall on autosomes
+table(mg_h2_ase_autosome$type)
+
+table(dds.mg.h2_X$reg.div)
+head(dds.mg.h2_X)
+nrow(dds.mg.h2_X) #2326 detectable out of possible 2665 X-linked genes
+
+mg_h2_ase_autosome_table = table(mg_h2_ase_autosome$type) # Autosomal counts
+mg_h2_ase_X_table = table(dds.mg.h2_X$reg.div) # X-linked counts
+
+
+#############################################################################################################
+###Making cumulative data for autosomes
+#############################################################################################################
+
+fg_h1_table.prop_A = cbind(as.data.frame(fg_h1_ase_autosome_table),as.data.frame(fg_h1_ase_autosome_table) %>%
+                             mutate(Proportion = prop.table(fg_h1_ase_autosome_table)) %>%
+                             mutate(Sex = c(rep("F", 7))) %>%
+                             mutate(Tissue = c(rep("G", 7))) %>%
+                             mutate(Hybrid = c(rep("H1", 7))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid))
+
+
+fg_h2_table.prop_A = cbind(as.data.frame(fg_h2_ase_autosome_table),as.data.frame(fg_h2_ase_autosome_table) %>%
+                             mutate(Proportion = prop.table(fg_h2_ase_autosome_table)) %>%
+                             mutate(Sex = c(rep("F", 7))) %>%
+                             mutate(Tissue = c(rep("G", 7))) %>%
+                             mutate(Hybrid = c(rep("H2", 7))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid))  
+
+fs_h1_table.prop_A = cbind(as.data.frame(fs_h1_ase_autosome_table),as.data.frame(fs_h1_ase_autosome_table) %>%
+                             mutate(Proportion = prop.table(fs_h1_ase_autosome_table)) %>%
+                             mutate(Sex = c(rep("F", 7))) %>%
+                             mutate(Tissue = c(rep("S", 7))) %>%
+                             mutate(Hybrid = c(rep("H1", 7))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid))
+
+fs_h2_table.prop_A = cbind(as.data.frame(fs_h2_ase_autosome_table),as.data.frame(fs_h2_ase_autosome_table) %>%
+                             mutate(Proportion = prop.table(fs_h2_ase_autosome_table)) %>%
+                             mutate(Sex = c(rep("F", 7))) %>%
+                             mutate(Tissue = c(rep("S", 7))) %>%
+                             mutate(Hybrid = c(rep("H2", 7))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid))
+
+ms_h1_table.prop_A = cbind(as.data.frame(ms_h1_ase_autosome_table),as.data.frame(ms_h1_ase_autosome_table) %>%
+                             mutate(Proportion = prop.table(ms_h1_ase_autosome_table)) %>%
+                             mutate(Sex = c(rep("M", 7))) %>%
+                             mutate(Tissue = c(rep("S", 7))) %>%
+                             mutate(Hybrid = c(rep("H1", 7))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid)) 
+
+ms_h2_table.prop_A = cbind(as.data.frame(ms_h2_ase_autosome_table),as.data.frame(ms_h2_ase_autosome_table) %>%
+                             mutate(Proportion = prop.table(ms_h2_ase_autosome_table)) %>%
+                             mutate(Sex = c(rep("M", 7))) %>%
+                             mutate(Tissue = c(rep("S", 7))) %>%
+                             mutate(Hybrid = c(rep("H2", 7))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid)) 
+wm_h1_table.prop_A = cbind(as.data.frame(wm_h1_ase_autosome_table),as.data.frame(wm_h1_ase_autosome_table) %>%
+                             mutate(Proportion = prop.table(wm_h1_ase_autosome_table)) %>%
+                             mutate(Sex = c(rep("M", 7))) %>%
+                             mutate(Tissue = c(rep("W", 7))) %>%
+                             mutate(Hybrid = c(rep("H1", 7))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid)) 
+
+wm_h2_table.prop_A = cbind(as.data.frame(wm_h2_ase_autosome_table),as.data.frame(wm_h2_ase_autosome_table) %>%
+                             mutate(Proportion = prop.table(wm_h2_ase_autosome_table)) %>%
+                             mutate(Sex = c(rep("M", 7))) %>%
+                             mutate(Tissue = c(rep("W", 7))) %>%
+                             mutate(Hybrid = c(rep("H2", 7))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid))
+
+mg_h2_table.prop_A = cbind(as.data.frame(mg_h2_ase_autosome_table),as.data.frame(mg_h2_ase_autosome_table) %>%
+                             mutate(Proportion = prop.table(mg_h2_ase_autosome_table)) %>%
+                             mutate(Sex = c(rep("M", 7))) %>%
+                             mutate(Tissue = c(rep("G", 7))) %>%
+                             mutate(Hybrid = c(rep("H2", 7))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid)) 
+
+regdiv_autosomal_counts = rbind(fg_h1_table.prop_A, fg_h2_table.prop_A, fs_h1_table.prop_A, fs_h2_table.prop_A,
+                                ms_h1_table.prop_A, ms_h2_table.prop_A, mg_h2_table.prop_A, wm_h1_table.prop_A, wm_h2_table.prop_A)
+
+regdiv_autosomal_counts = regdiv_autosomal_counts %>% rename(RegDiv = Var1, Num_of_genes = Freq)
+#write.csv(regdiv_autosomal_counts, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/4.Regdiv_autosomal_counts.csv")
+
+############################################################################################################
+###Making cumulative data for X-linked genes
+#############################################################################################################
+
+fg_h1_table.prop_X = cbind(as.data.frame(fg_h1_ase_X_table),as.data.frame(fg_h1_ase_X_table) %>%
+                             mutate(Proportion = prop.table(fg_h1_ase_X_table)) %>%
+                             mutate(Sex = c(rep("F", 5))) %>%
+                             mutate(Tissue = c(rep("G", 5))) %>%
+                             mutate(Hybrid = c(rep("H1", 5))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid))
+
+
+fg_h2_table.prop_X = cbind(as.data.frame(fg_h2_ase_X_table),as.data.frame(fg_h2_ase_X_table) %>%
+                             mutate(Proportion = prop.table(fg_h2_ase_X_table)) %>%
+                             mutate(Sex = c(rep("F", 5))) %>%
+                             mutate(Tissue = c(rep("G", 5))) %>%
+                             mutate(Hybrid = c(rep("H2", 5))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid))  
+
+fs_h1_table.prop_X = cbind(as.data.frame(fs_h1_ase_X_table),as.data.frame(fs_h1_ase_X_table) %>%
+                             mutate(Proportion = prop.table(fs_h1_ase_X_table)) %>%
+                             mutate(Sex = c(rep("F", 5))) %>%
+                             mutate(Tissue = c(rep("S", 5))) %>%
+                             mutate(Hybrid = c(rep("H1", 5))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid))
+
+fs_h2_table.prop_X = cbind(as.data.frame(fs_h2_ase_X_table),as.data.frame(fs_h2_ase_X_table) %>%
+                             mutate(Proportion = prop.table(fs_h2_ase_X_table)) %>%
+                             mutate(Sex = c(rep("F", 5))) %>%
+                             mutate(Tissue = c(rep("S", 5))) %>%
+                             mutate(Hybrid = c(rep("H2", 5))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid))
+
+ms_h1_table.prop_X = cbind(as.data.frame(ms_h1_ase_X_table),as.data.frame(ms_h1_ase_X_table) %>%
+                             mutate(Proportion = prop.table(ms_h1_ase_X_table)) %>%
+                             mutate(Sex = c(rep("M", 5))) %>%
+                             mutate(Tissue = c(rep("S", 5))) %>%
+                             mutate(Hybrid = c(rep("H1", 5))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid)) 
+
+ms_h2_table.prop_X = cbind(as.data.frame(ms_h2_ase_X_table),as.data.frame(ms_h2_ase_X_table) %>%
+                             mutate(Proportion = prop.table(ms_h2_ase_X_table)) %>%
+                             mutate(Sex = c(rep("M", 5))) %>%
+                             mutate(Tissue = c(rep("S", 5))) %>%
+                             mutate(Hybrid = c(rep("H2", 5))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid)) 
+wm_h1_table.prop_X = cbind(as.data.frame(wm_h1_ase_X_table),as.data.frame(wm_h1_ase_X_table) %>%
+                             mutate(Proportion = prop.table(wm_h1_ase_X_table)) %>%
+                             mutate(Sex = c(rep("M", 5))) %>%
+                             mutate(Tissue = c(rep("W", 5))) %>%
+                             mutate(Hybrid = c(rep("H1", 5))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid)) 
+
+wm_h2_table.prop_X = cbind(as.data.frame(wm_h2_ase_X_table),as.data.frame(wm_h2_ase_X_table) %>%
+                             mutate(Proportion = prop.table(wm_h2_ase_X_table)) %>%
+                             mutate(Sex = c(rep("M", 5))) %>%
+                             mutate(Tissue = c(rep("W", 5))) %>%
+                             mutate(Hybrid = c(rep("H2", 5))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid))
+
+mg_h2_table.prop_X = cbind(as.data.frame(mg_h2_ase_X_table),as.data.frame(mg_h2_ase_X_table) %>%
+                             mutate(Proportion = prop.table(mg_h2_ase_X_table)) %>%
+                             mutate(Sex = c(rep("M", 5))) %>%
+                             mutate(Tissue = c(rep("G", 5))) %>%
+                             mutate(Hybrid = c(rep("H2", 5))) %>%
+                             dplyr::select(Proportion, Sex, Tissue, Hybrid)) 
+
+regdiv_X_counts = rbind(fg_h1_table.prop_X, fg_h2_table.prop_X, fs_h1_table.prop_X, fs_h2_table.prop_X,
+                        ms_h1_table.prop_X, ms_h2_table.prop_X, mg_h2_table.prop_X, wm_h1_table.prop_X, wm_h2_table.prop_X)
+
+regdiv_X_counts = regdiv_X_counts %>% rename(RegDiv = Var1, Num_of_genes = Freq)
+#write.csv(regdiv_X_counts, file = "Allele Specific Expression/Hybrid Analysis/Figures_and_Results/5.Regdiv_X_counts.csv")
+
 
 
 
